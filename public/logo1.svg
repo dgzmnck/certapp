@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Logo placeholder">
+  <circle cx="60" cy="60" r="56" fill="#14213d"/>
+  <circle cx="60" cy="60" r="50" fill="none" stroke="#b08d3c" stroke-width="2"/>
+  <path d="M60 24 L72 52 L60 46 L48 52 Z" fill="#b08d3c"/>
+  <path d="M34 62 H86 V70 C86 86 74 96 60 98 C46 96 34 86 34 70 Z" fill="#fffdf8"/>
+  <path d="M60 68 L66 80 L60 86 L54 80 Z" fill="#14213d"/>
+</svg>

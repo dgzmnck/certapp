@@ -1,0 +1,28 @@
+{
+  "name": "certificate-of-appearance",
+  "version": "1.0.0",
+  "description": "Generates Certificate of Appearance PDFs and stores records in Google Sheets. Deployable on Vercel.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^131.0.1",
+    "bootstrap": "^5.3.3",
+    "compression": "^1.7.4",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "googleapis": "^144.0.0",
+    "helmet": "^8.0.0",
+    "multer": "^2.5.0",
+    "puppeteer-core": "^23.11.1",
+    "qrcode": "^1.5.4"
+  }
+}

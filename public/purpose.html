@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Get your certificate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+  <main class="page container-xl">
+    <div class="row g-0 shell">
+      <aside class="col-lg-5 intro">
+        <img src="/logo.svg" alt="" class="intro-logo" width="64" height="64">
+        <h1 class="intro-title">Certificate of Appearance</h1>
+        <div id="purposeLoading" class="intro-text">Loading certificate details…</div>
+        <dl class="event-details d-none" id="purposeDetails">
+          <dt>Place</dt><dd id="purposePlace"></dd>
+          <dt>Date</dt><dd id="purposeDate"></dd>
+          <dt>Purpose</dt><dd id="purposeText"></dd>
+        </dl>
+      </aside>
+      <section class="col-lg-7 form-panel">
+        <div class="alert alert-danger d-none" id="purposeError" role="alert"></div>
+        <div class="alert alert-warning d-none" id="purposeClosed" role="alert">
+          This certificate link is no longer issuing certificates. Please contact the organizers.
+        </div>
+        <form id="purposeForm" class="d-none" novalidate>
+          <h2 class="h4 mb-3 form-heading">Enter your details</h2>
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="fullName" class="form-label">Full name</label>
+              <input type="text" class="form-control" id="fullName" minlength="2" maxlength="120" autocomplete="name" required>
+              <div class="invalid-feedback">Enter your full name (at least 2 characters).</div>
+            </div>
+            <div class="col-12">
+              <label for="organization" class="form-label">Organization</label>
+              <input type="text" class="form-control" id="organization" minlength="2" maxlength="200" autocomplete="organization" required>
+              <div class="invalid-feedback">Enter your organization.</div>
+            </div>
+            <div class="col-12 pt-2">
+              <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner" role="status" aria-hidden="true"></span>
+                <span id="submitText">Generate Certificate</span>
+              </button>
+            </div>
+            <div class="col-12 d-none" id="result" aria-live="polite">
+              <div class="result-box">
+                <div><strong id="resultNo"></strong> was downloaded.<span class="d-block small">If nothing happened, use the link to save it again.</span></div>
+                <a href="#" class="btn btn-outline-primary btn-sm" id="resultLink">Download again</a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" aria-live="assertive"></div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/purpose.js"></script>
+</body>
+</html>

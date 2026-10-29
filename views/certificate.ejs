@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Certificate of Appearance - <%= certificate.certificateNo %></title>
+
+  <!-- Fonts: fall back to Georgia/Times if the network is unavailable -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 (inlined by the server so rendering never depends on a CDN) -->
+  <% if (bootstrapCss) { %>
+  <style><%- bootstrapCss %></style>
+  <% } else { %>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <% } %>
+
+  <style>
+    :root {
+      --text: #000000;         /* all text is black */
+      --green: #2e7d4f;        /* border and accents */
+      --green-soft: #8fc3a2;   /* fine inner border line */
+      --brand-green: #17602f;  /* university name in the header */
+      --brand-gold: #b58a2b;   /* motto in the header */
+    }
+
+    /* ---- Print setup: A4 landscape, no browser margins ---- */
+    @page { size: A4 landscape; margin: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body {
+      width: 297mm;
+      height: 210mm;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #ffffff;               /* plain white paper */
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    }
+
+    .sheet {
+      position: relative;
+      width: 297mm;
+      height: 210mm;
+      padding: 6mm;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* ---- Green border: heavy outer line, fine inner line ---- */
+    .frame {
+      position: absolute;
+      inset: 6mm;
+      border: 1mm solid var(--green);
+      pointer-events: none;
+    }
+    .frame::after {
+      content: '';
+      position: absolute;
+      inset: 1.8mm;
+      border: 0.25mm solid var(--green-soft);
+    }
+
+    /* ---- Layout: header / body / footer stacked top to bottom ---- */
+    .content {
+      position: relative;
+      height: 100%;
+      padding: 6mm 14mm 5mm;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header (drawn in code: logo + name, address, motto) ---- */
+    .header { text-align: center; }
+    .header-img {
+      display: block;
+      width: 100%;
+      max-height: 34mm;
+      object-fit: contain;
+      margin: 0 auto;
+    }
+    .brand { display: flex; align-items: center; justify-content: center; gap: 5mm; }
+    .brand-logo { height: 25mm; width: auto; max-width: 40mm; object-fit: contain; flex: none; }
+    .brand-text { text-align: center; }
+    .brand-name {
+      font-family: 'EB Garamond', 'Cormorant Garamond', Georgia, serif;
+      font-weight: 700;
+      font-variant: small-caps;
+      font-size: 27pt;
+      line-height: 1.05;
+      letter-spacing: 0.005em;
+      color: var(--brand-green);
+      margin: 0;
+    }
+    .brand-address {
+      font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      font-size: 14.5pt;
+      color: #000;
+      margin: 1.2mm 0 0;
+    }
+    .brand-motto {
+      font-family: 'EB Garamond', 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 14pt;
+      color: var(--brand-gold);
+      margin: 1mm 0 0;
+    }
+    .brand-motto .dot { margin: 0 2.2mm; font-style: normal; }
+
+    /* ---- Body ---- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 8mm;
+    }
+    .title {
+      font-size: 34pt;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      line-height: 1.05;
+      text-align: center;
+      margin: 0 0 7mm;
+    }
+    .title::after {
+      content: '';
+      display: block;
+      width: 70mm;
+      height: 0.6mm;
+      margin: 2.5mm auto 0;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+    }
+    .letter { width: 100%; max-width: 232mm; margin: 0 auto; }
+    .salutation {
+      font-size: 16pt;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin: 0 0 4mm;
+    }
+    .statement {
+      font-size: 19pt;
+      line-height: 1.7;
+      text-align: justify;
+      text-indent: 14mm;
+      margin: 0;
+    }
+    .name {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border-bottom: 0.35mm solid var(--green);
+      padding: 0 1mm;
+    }
+    .statement strong { font-weight: 700; }
+
+    /* ---- "CA without event" layout ---- */
+    .statement.noevent { font-size: 18pt; text-indent: 0; }
+    .caps { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+    .purpose {
+      font-size: 16.5pt;
+      line-height: 1.5;
+      text-align: left;
+      margin: 6mm 0 0;
+      overflow-wrap: anywhere;
+    }
+    .purpose-label { font-weight: 700; letter-spacing: 0.05em; margin-right: 2mm; }
+
+    /* ---- Centered signatory and certificate details ---- */
+    .footer-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 43mm;
+      margin-top: 3mm;
+      padding-bottom: 1mm;
+      text-align: center;
+    }
+    .signatory-block { width: 100%; padding: 0 25mm; }
+    .signature-image {
+      display: block;
+      width: 58mm;
+      height: 19mm;
+      object-fit: contain;
+      margin: 0 auto 0.5mm;
+    }
+    .sign-name {
+      margin: 0;
+      font-size: 13pt;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    .sign-title { margin: 1mm 0 0; font-size: 10.5pt; line-height: 1.15; }
+    .issued { margin: 5mm 0 0; font-size: 10.5pt; line-height: 1.15; }
+    .ref-no { margin: 1.2mm 0 0; font-size: 10.5pt; line-height: 1.15; }
+    .qr {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 21mm;
+      height: 21mm;
+      display: block;
+    }
+
+    /* ---- Footer image ---- */
+    .footer-img {
+      display: block;
+      width: 100%;
+      max-height: 22mm;
+      object-fit: contain;
+      margin: 3mm auto 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="frame"></div>
+
+    <div class="content">
+
+      <!-- Header: HEADER_IMAGE if set, otherwise built from code (logo.svg + text from .env) -->
+      <header class="header">
+        <% if (headerImage) { %>
+          <img class="header-img" src="<%= headerImage %>" alt="" onerror="this.style.display='none'">
+        <% } else { %>
+          <div class="brand">
+            <% if (logoImage) { %><img class="brand-logo" src="<%= logoImage %>" alt="" onerror="this.style.display='none'"><% } %>
+            <div class="brand-text">
+              <p class="brand-name"><%= branding.issuerName %></p>
+              <% if (branding.issuerAddress) { %><p class="brand-address"><%= branding.issuerAddress %></p><% } %>
+              <% const motto = (branding.issuerMotto || '').split(/\s*[•|,]\s*/).filter(Boolean); %>
+              <% if (motto.length) { %>
+                <p class="brand-motto"><% motto.forEach(function (word, i) { %><% if (i) { %><span class="dot">&bull;</span><% } %><%= word %><% }); %></p>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+      </header>
+
+      <!-- Body -->
+      <main class="main">
+        <h1 class="title"><%= certificate.certificateTitle || 'Certificate of Appearance' %></h1>
+
+        <% if (isPurpose) { %>
+        <div class="letter">
+          <p class="statement noevent">
+            <span class="caps">This is to certify that</span>
+            <span class="name"><%= certificate.fullName %></span>
+            of <strong><%= certificate.organization %></strong>
+            was at <strong><%= certificate.venue %></strong>
+            on <strong><%= eventDateLong %></strong>.
+          </p>
+          <p class="purpose"><span class="purpose-label">Purpose:</span><%= certificate.purpose %></p>
+        </div>
+        <% } else { %>
+        <div class="letter">
+          <p class="salutation">TO WHOM IT MAY CONCERN:</p>
+          <p class="statement">
+            This is to certify that <span class="name"><%= certificate.fullName %></span>
+            appeared and actively participated during the <strong><%= certificate.eventName %></strong>
+            held at <strong><%= certificate.venue %></strong>
+            on <strong><%= eventDateLong %></strong>.
+          </p>
+        </div>
+        <% } %>
+      </main>
+
+      <footer class="footer-row">
+        <div class="signatory-block">
+          <% if (signatureImage) { %><img class="signature-image" src="<%= signatureImage %>" alt="Electronic signature"><% } %>
+          <p class="sign-name"><%= signatory.name %></p>
+          <p class="sign-title"><%= signatory.title %><% if (signatory.office) { %>, <%= signatory.office %><% } %></p>
+          <p class="issued">Date Issued: <%= issueDateLong %></p>
+          <p class="ref-no">CA Reference No: <%= certificate.certificateNo %></p>
+        </div>
+        <img class="qr" src="<%= qrDataUri %>" alt="Verification QR code">
+      </footer>
+
+      <!-- Footer banner image from FOOTER_IMAGE -->
+      <% if (footerImage) { %>
+        <img class="footer-img" src="<%= footerImage %>" alt="" onerror="this.style.display='none'">
+      <% } %>
+
+    </div>
+  </div>
+</body>
+</html>
