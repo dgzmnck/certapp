@@ -166,9 +166,25 @@ body {
 .form-heading { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.6rem; }
 
 /* ---------- Admin ---------- */
-.login-card { max-width: 420px; }
-.login-head { padding: 1.5rem 2rem; border-right: 0; border-bottom: 4px solid var(--gold); }
-.login-head .intro-title { font-size: 2rem; }
+.login-card { max-width: 540px; }
+.login-head {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-right: 0;
+  border-bottom: 4px solid var(--gold);
+}
+.login-logo { flex: 0 0 72px; object-fit: contain; }
+.login-issuer { min-width: 0; }
+.login-issuer-name {
+  color: #f3efe4;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.login-issuer-address { color: #cfd5e3; margin-top: .3rem; }
 
 .dash-title {
   font-family: 'Cormorant Garamond', Georgia, serif;

@@ -17,10 +17,14 @@
   <main class="page container d-none" id="loginView">
     <div class="login-card shell mx-auto">
       <div class="intro login-head">
-        <img src="/logo.svg" alt="" width="48" height="48" class="mb-3">
-        <h1 class="intro-title mb-0">Admin sign in</h1>
+        <img src="/logo.svg" alt="" width="72" height="72" class="login-logo">
+        <div class="login-issuer">
+          <div class="login-issuer-name" id="loginIssuerName"></div>
+          <div class="login-issuer-address" id="loginIssuerAddress"></div>
+        </div>
       </div>
       <form id="loginForm" class="form-panel" novalidate>
+        <h1 class="h4 form-heading mb-4">Admin sign in</h1>
         <div class="mb-3">
           <label for="username" class="form-label">Username</label>
           <input type="text" class="form-control" id="username" name="username" autocomplete="username" required>

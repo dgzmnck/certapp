@@ -13,6 +13,16 @@ $(function () {
 
   /* ------------------------------ Views ------------------------------ */
 
+  $.getJSON('/api/branding')
+    .done(function (res) {
+      var branding = res.data || {};
+      $('#loginIssuerName').text(branding.issuerName || '');
+      $('#loginIssuerAddress').text(branding.issuerAddress || '').toggleClass('d-none', !branding.issuerAddress);
+    })
+    .fail(function (jqXHR, textStatus) {
+      console.error('Could not load issuer branding:', Cert.errorMessage(jqXHR, textStatus));
+    });
+
   function showLogin() {
     $('#dashView').addClass('d-none');
     $('#loginView').removeClass('d-none');
