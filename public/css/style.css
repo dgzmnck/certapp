@@ -41,6 +41,33 @@ body {
 
 .intro-logo { margin-bottom: 1.5rem; }
 
+.verifier-issuer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(243, 239, 228, .25);
+}
+.verifier-issuer-logo {
+  flex: 0 0 100px;
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+.verifier-issuer-text { min-width: 0; }
+.verifier-issuer-name {
+  color: #f3efe4;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.verifier-issuer-address {
+  color: #cfd5e3;
+  margin-top: .35rem;
+}
+
 .intro-title {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 600;
@@ -159,6 +186,19 @@ body {
 }
 .events-table td { padding: .85rem 1rem; }
 .qr-preview { width: 100%; max-width: 320px; aspect-ratio: 1; border: 1px solid var(--line); }
+.certificate-preview-scroll {
+  max-height: 82vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #f6f7fa;
+}
+.certificate-preview-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 297 / 210;
+  border: 0;
+  background: #fff;
+}
 .modal-title { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.5rem !important; }
 
 /* ---------- Verification result ---------- */

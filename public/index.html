@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Verify a certificate</title>
-  <meta name="description" content="Check that a Certificate of Appearance is genuine by entering its certificate number.">
+  <meta name="description" content="Verify a certificate using its reference number and the name printed on it.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,29 +16,41 @@
     <div class="row g-0 shell">
 
       <aside class="col-lg-5 intro">
-        <img src="/logo.svg" alt="" class="intro-logo" width="64" height="64">
+        <header class="verifier-issuer d-none" id="verifierIssuer">
+          <img src="/logo.svg" alt="" class="verifier-issuer-logo" width="100" height="100">
+          <div class="verifier-issuer-text">
+            <div class="verifier-issuer-name" id="issuerName"></div>
+            <div class="verifier-issuer-address" id="issuerAddress"></div>
+          </div>
+        </header>
         <h1 class="intro-title">Verify a certificate</h1>
         <p class="intro-text">
-          Enter the CA Reference No. printed at the bottom of a Certificate of Appearance,
-          or scan the QR code on it. If the number is on record, you can view the details
-          and download the certificate.
+          Enter the reference number and name printed on the certificate, or scan its QR
+          code to fill both in automatically. If both match the record, you can view the
+          details and download the certificate.
         </p>
       </aside>
 
       <section class="col-lg-7 form-panel">
         <form id="verifyForm" novalidate>
-          <label for="certNo" class="form-label">CA Reference No.</label>
-          <div class="input-group input-group-lg">
-            <input type="text" class="form-control" id="certNo" name="certNo"
+          <div class="mb-3">
+            <label for="certNo" class="form-label">Reference No.</label>
+            <input type="text" class="form-control form-control-lg" id="certNo" name="certNo"
                    placeholder="Enter certificate reference number" maxlength="20" autocomplete="off"
                    autocapitalize="characters" spellcheck="false" required>
-            <button type="submit" class="btn btn-primary" id="verifyBtn">
+            <div class="invalid-feedback" id="certNoError">Enter the reference number printed on the certificate.</div>
+          </div>
+          <div class="mb-3">
+            <label for="certName" class="form-label">Name on certificate</label>
+            <input type="text" class="form-control form-control-lg" id="certName" name="name"
+                   placeholder="Enter the recipient name" maxlength="120" autocomplete="name" required>
+            <div class="invalid-feedback" id="certNameError">Enter the name printed on the certificate.</div>
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary btn-lg" id="verifyBtn">
               <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner" role="status" aria-hidden="true"></span>
               <span id="verifyText">Verify</span>
             </button>
-          </div>
-          <div class="invalid-feedback d-block d-none" id="certNoError">
-            Enter the CA Reference No. printed on the certificate.
           </div>
         </form>
 

@@ -6,20 +6,24 @@ const multer = require('multer');
 
 const config = require('../config');
 const auth = require('../services/authService');
+const accountService = require('../services/accountService');
 const eventService = require('../services/eventService');
 const certificateService = require('../services/certificateService');
 const signatoryService = require('../services/signatoryService');
 const purposeTemplateService = require('../services/purposeTemplateService');
+const certificateTemplateService = require('../services/certificateTemplateService');
+const pdfService = require('../services/pdfService');
 const signatureStorageService = require('../services/signatureStorageService');
 const { AppError } = require('../utils/errors');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireOwner } = require('../middleware/auth');
 const {
   validateEventInput,
   validatePurposeTemplateInput,
   isValidEventId,
   isValidCertificateNo,
 } = require('../utils/validators');
+const { todayISO } = require('../utils/dates');
 
 const router = express.Router();
 
@@ -78,19 +82,23 @@ function parseEventId(req) {
 /* ------------------------------ Session ------------------------------ */
 
 /** POST /api/admin/login  { username, password } */
-router.post('/login', (req, res, next) => {
+router.post('/login', asyncHandler(async (req, res, next) => {
   if (!auth.isConfigured()) {
     return next(
       new AppError(503, 'Admin login is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and SESSION_SECRET (16+ characters).')
     );
   }
   const { username, password } = req.body || {};
-  if (typeof username !== 'string' || typeof password !== 'string' || !auth.verifyCredentials(username, password)) {
+  if (typeof username !== 'string' || typeof password !== 'string') {
     return next(new AppError(401, 'Incorrect username or password.'));
   }
-  auth.setSessionCookie(res, username);
-  return res.json({ success: true });
-});
+  const isOwner = auth.verifyCredentials(username, password);
+  const account = isOwner ? null : await accountService.authenticate(username, password);
+  if (!isOwner && !account) return next(new AppError(401, 'Incorrect username or password.'));
+  const authenticatedUsername = isOwner ? config.admin.username : account.username;
+  auth.setSessionCookie(res, authenticatedUsername, isOwner);
+  return res.json({ success: true, isOwner });
+}));
 
 /** POST /api/admin/logout */
 router.post('/logout', (req, res) => {
@@ -100,9 +108,29 @@ router.post('/logout', (req, res) => {
 
 /** GET /api/admin/me  -> { authenticated: boolean } */
 router.get('/me', (req, res) => {
+  const session = auth.readSession(req);
   res.set('Cache-Control', 'no-store');
-  res.json({ success: true, authenticated: Boolean(auth.readSession(req)) });
+  res.json({ success: true, authenticated: Boolean(session), isOwner: Boolean(session && session.owner) });
 });
+
+router.get(
+  '/accounts',
+  requireOwner,
+  asyncHandler(async (req, res) => {
+    const accounts = await accountService.listAccounts();
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: accounts });
+  })
+);
+
+router.post(
+  '/accounts',
+  requireOwner,
+  asyncHandler(async (req, res) => {
+    const account = await accountService.createAccount(req.body || {});
+    res.status(201).json({ success: true, data: account });
+  })
+);
 
 /* ------------------------------ Events ------------------------------ */
 
@@ -112,8 +140,12 @@ router.get(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const events = await eventService.listEvents();
+    const certificateCounts = await certificateService.countByEvent(events);
     res.set('Cache-Control', 'no-store');
-    res.json({ success: true, data: events.map((e) => withLink(req, e)) });
+    res.json({
+      success: true,
+      data: events.map((event) => ({ ...withLink(req, event), certificateCount: certificateCounts[event.eventId] || 0 })),
+    });
   })
 );
 
@@ -122,16 +154,149 @@ router.post(
   '/events',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { value, errors } = validateEventInput(req.body);
-    if (Object.keys(errors).length) {
-      throw new AppError(400, 'Please correct the highlighted fields.', { fields: errors });
+    let value;
+    if (req.body && req.body.templateId) {
+      const template = await certificateTemplateService.getTemplate(String(req.body.templateId));
+      if (!template || template.status !== certificateTemplateService.STATUS.ACTIVE) {
+        throw new AppError(400, 'Select an active certificate template.');
+      }
+      const fixed = certificateTemplateService.validateFieldValues(req.body.fixedValues, template.adminFields);
+      const signatoryId = typeof req.body.signatoryId === 'string' ? req.body.signatoryId.trim() : '';
+      const errors = { ...fixed.errors };
+      if (!signatoryId) errors.signatoryId = 'Select a signatory.';
+      if (Object.keys(errors).length) throw new AppError(400, 'Please correct the highlighted fields.', { fields: errors });
+
+      value = {
+        templateId: template.templateId,
+        eventName: fixed.values.EVENT_NAME || template.templateName,
+        eventDate: fixed.values.EVENT_DATE || '',
+        venue: fixed.values.EVENT_PLACE || fixed.values.EVENTPLACE || '',
+        signatoryId,
+        certificateTitle: template.certificateTitle,
+        messageTemplate: template.messageTemplate,
+        adminFields: template.adminFields,
+        recipientFields: template.recipientFields,
+        fixedValues: fixed.values,
+      };
+    } else {
+      const result = validateEventInput(req.body);
+      value = result.value;
+      if (Object.keys(result.errors).length) {
+        throw new AppError(400, 'Please correct the highlighted fields.', { fields: result.errors });
+      }
     }
+
     const signatory = await signatoryService.getSignatory(value.signatoryId);
     if (!signatory || signatory.status !== signatoryService.STATUS.ACTIVE) {
       throw new AppError(400, 'Select an active signatory.');
     }
     const event = await eventService.createEvent(value);
     res.status(201).json({ success: true, data: withLink(req, event) });
+  })
+);
+
+/* ------------------------ Certificate templates ------------------------ */
+
+router.get(
+  '/certificate-templates',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const templates = await certificateTemplateService.listTemplates();
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: templates });
+  })
+);
+
+router.post(
+  '/certificate-templates',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { value, errors } = certificateTemplateService.validateTemplateInput(req.body);
+    if (Object.keys(errors).length) {
+      throw new AppError(400, 'Please correct the highlighted fields.', { fields: errors });
+    }
+    const template = await certificateTemplateService.createTemplate(value);
+    res.status(201).json({ success: true, data: template });
+  })
+);
+
+router.post(
+  '/certificate-preview',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const body = req.body || {};
+    let template;
+    let fixedValues = {};
+    let signatoryId = '';
+
+    if (body.eventId) {
+      const eventId = parseEventId({ params: { eventId: body.eventId } });
+      const event = await eventService.getEvent(eventId);
+      if (!event) throw new AppError(404, 'Event not found.');
+      template = {
+        templateName: event.eventName || 'Certificate',
+        certificateTitle: event.certificateTitle,
+        messageTemplate: event.messageTemplate,
+        adminFields: event.adminFields || [],
+        recipientFields: event.recipientFields || [],
+      };
+      fixedValues = event.fixedValues || {};
+      signatoryId = event.signatoryId;
+    } else if (body.templateId) {
+      template = await certificateTemplateService.getTemplate(String(body.templateId));
+      if (!template || template.status !== certificateTemplateService.STATUS.ACTIVE) {
+        throw new AppError(400, 'Select an active certificate template.');
+      }
+      const validatedFixed = certificateTemplateService.validateFieldValues(body.fixedValues, template.adminFields);
+      fixedValues = validatedFixed.values;
+      signatoryId = typeof body.signatoryId === 'string' ? body.signatoryId.trim() : '';
+    } else {
+      const result = certificateTemplateService.validateTemplateInput(body);
+      if (Object.keys(result.errors).length) {
+        throw new AppError(400, 'Please correct the highlighted template fields.', { fields: result.errors });
+      }
+      template = result.value;
+      signatoryId = typeof body.signatoryId === 'string' ? body.signatoryId.trim() : '';
+    }
+
+    const signatory = await signatoryService.getSignatory(signatoryId);
+    if (!signatory || signatory.status !== signatoryService.STATUS.ACTIVE) {
+      throw new AppError(400, 'Select an active signatory to preview the certificate.');
+    }
+
+    const fieldValues = {};
+    template.adminFields.concat(template.recipientFields).forEach((field) => {
+      fieldValues[field.key] = field.key === 'NAME'
+        ? 'SAMPLE RECIPIENT'
+        : fixedValues[field.key] || (
+          field.key === 'EVENT_DATE' ? '2026-10-30' : `Sample ${field.label}`
+        );
+    });
+    const issueDate = todayISO(config.timezone);
+    const certificate = {
+      type: 'EVENT',
+      certificateNo: 'SAMPLE-REFERENCE',
+      fullName: fieldValues.NAME,
+      eventName: fieldValues.EVENT_NAME || template.templateName,
+      eventDate: fieldValues.EVENT_DATE || '',
+      venue: fieldValues.EVENT_PLACE || fieldValues.EVENTPLACE || '',
+      certificateTitle: template.certificateTitle,
+      issueDate,
+      templateId: body.eventId || body.templateId || 'SAMPLE',
+      messageTemplate: template.messageTemplate,
+      fieldValues,
+      fieldLabels: Object.fromEntries(
+        template.adminFields.concat(template.recipientFields).map((field) => [field.key, field.label])
+      ),
+      signatoryName: signatory.name,
+      signatoryTitle: signatory.title,
+      signatoryOffice: signatory.office,
+      signatoryESignature: signatory.eSignature,
+    };
+    const qrDataUri = await QRCode.toDataURL(config.baseUrl, { margin: 1 });
+    const html = await pdfService.renderCertificateHtml(certificate, qrDataUri);
+    res.set('Cache-Control', 'no-store');
+    res.type('html').send(html);
   })
 );
 
@@ -249,6 +414,9 @@ router.patch(
   asyncHandler(async (req, res) => {
     const eventId = parseEventId(req);
     const body = req.body || {};
+    if (body.signatoryId !== undefined) {
+      throw new AppError(400, 'The event signatory is fixed when the event is created.');
+    }
     let event;
     if (body.status !== undefined) {
       if (!Object.values(eventService.STATUS).includes(body.status)) {
@@ -256,21 +424,12 @@ router.patch(
       }
       event = await eventService.setStatus(eventId, body.status);
     }
-    if (body.signatoryId !== undefined || body.certificateTitle !== undefined) {
+    if (body.certificateTitle !== undefined) {
       const updates = {};
-      if (body.signatoryId !== undefined) {
-        const signatory = await signatoryService.getSignatory(body.signatoryId);
-        if (!signatory || signatory.status !== signatoryService.STATUS.ACTIVE) {
-          throw new AppError(400, 'Select an active signatory.');
-        }
-        updates.signatoryId = body.signatoryId;
+      if (typeof body.certificateTitle !== 'string' || body.certificateTitle.trim().length > 120) {
+        throw new AppError(400, 'Certificate title must be 120 characters or fewer.');
       }
-      if (body.certificateTitle !== undefined) {
-        if (typeof body.certificateTitle !== 'string' || body.certificateTitle.trim().length > 120) {
-          throw new AppError(400, 'Certificate title must be 120 characters or fewer.');
-        }
-        updates.certificateTitle = body.certificateTitle.trim();
-      }
+      updates.certificateTitle = body.certificateTitle.trim();
       event = await eventService.updateEventDetails(eventId, updates);
     }
     if (!event) throw new AppError(400, 'Provide a status or event setting to update.');
@@ -288,13 +447,17 @@ router.get(
 
     const records = await certificateService.listByEvent(event);
     const certificates = records
-      .map(({ rowNumber, eventId, ...rest }) => rest) // hide internals
+      .map(({ fullName, issueDate, certificateNo }) => ({ fullName, issueDate, certificateNo }))
       .reverse(); // newest first
 
     res.set('Cache-Control', 'no-store');
     res.json({
       success: true,
-      data: { event: { eventId: event.eventId, eventName: event.eventName }, certificates },
+      data: {
+        event: { eventId: event.eventId, eventName: event.eventName },
+        count: certificates.length,
+        certificates,
+      },
     });
   })
 );

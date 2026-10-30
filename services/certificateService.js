@@ -89,18 +89,31 @@ function createCertificate(data) {
  * Certificates issued for one event, oldest first.
  * Rows from before the Event ID column existed are matched by event details.
  */
-async function listByEvent(event) {
-  const all = await sheet.getAllRecords();
-  return all.filter((r) =>
-    r.eventId
-      ? r.eventId === event.eventId
-      : r.eventName === event.eventName &&
-        r.eventDate === event.eventDate &&
-        r.venue === event.venue
-  );
+function belongsToEvent(record, event) {
+  return record.eventId
+    ? record.eventId === event.eventId
+    : record.eventName === event.eventName &&
+      record.eventDate === event.eventDate &&
+      record.venue === event.venue;
 }
 
-/** Certificates issued without an event (they have no event name). */
+async function listByEvent(event) {
+  const all = await sheet.getAllRecords();
+  return all.filter((record) => belongsToEvent(record, event));
+}
+
+async function countByEvent(events) {
+  const all = await sheet.getAllRecords();
+  return events.reduce((counts, event) => {
+    counts[event.eventId] = all.filter((record) => belongsToEvent(record, event)).length;
+    return counts;
+  }, {});
+}
+
+/*
+ * Rows without event IDs are older certificates; match them to event details
+ * until they can no longer be associated with an event.
+ */
 async function listNoEvent() {
   const all = await sheet.getAllRecords();
   return all.filter((r) => !r.eventName);
@@ -117,6 +130,7 @@ async function setStatus(certificateNo, status) {
 module.exports = {
   STATUS,
   listByEvent,
+  countByEvent,
   listNoEvent,
   setStatus,
   createCertificate,

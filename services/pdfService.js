@@ -108,8 +108,59 @@ async function renderCertificateHtml(certificate, qrDataUri) {
     footerImage: loadImage(config.branding.footerImage),
     bootstrapCss: loadBootstrapCss(),
     eventDateLong: formatLongDate(certificate.eventDate),
-    issueDateLong: formatLongDate(certificate.issueDate),
+    renderedMessage: renderMessage(certificate),
   });
+}
+
+function renderMessage(certificate) {
+  if (!certificate.messageTemplate) return '';
+  const messageTemplate = String(certificate.messageTemplate)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const [year, month, day] = String(certificate.issueDate || '').split('-');
+  const issueMonth = month
+    ? new Date(Date.UTC(Number(year), Number(month) - 1, 1)).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })
+    : '';
+  const values = {
+    ...(certificate.fieldValues || {}),
+    NAME: (certificate.fieldValues || {}).NAME || certificate.fullName || '',
+    EVENT_NAME: certificate.eventName || (certificate.fieldValues || {}).EVENT_NAME || '',
+    EVENT_PLACE: certificate.venue || (certificate.fieldValues || {}).EVENT_PLACE || '',
+    EVENT_DATE: certificate.eventDate || (certificate.fieldValues || {}).EVENT_DATE || '',
+    ISSUE_DAY: day ? String(Number(day)) : '',
+    ISSUE_MONTH: issueMonth,
+    ISSUE_YEAR: year || '',
+    ISSUE_DATE: formatLongDate(certificate.issueDate),
+    SIGNATORY: certificate.signatoryName || '',
+    SIGNATORY_NAME: certificate.signatoryName || '',
+    SIGNATORY_TITLE: certificate.signatoryTitle || '',
+    SIGNATORY_OFFICE: certificate.signatoryOffice || '',
+  };
+  if (values.EVENT_DATE) values.EVENT_DATE = formatLongDate(values.EVENT_DATE);
+  if (values.EVENTPLACE === undefined) values.EVENTPLACE = values.EVENT_PLACE || '';
+  const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const tokenPattern = /_([A-Z][A-Z0-9_]*)_/g;
+  let html = '';
+  let lastIndex = 0;
+  let match;
+  while ((match = tokenPattern.exec(messageTemplate))) {
+    html += escapeHtml(messageTemplate.slice(lastIndex, match.index)).replace(/\n/g, '<br>');
+    if (Object.prototype.hasOwnProperty.call(values, match[1])) {
+      const text = escapeHtml(values[match[1]] || '');
+      html += match[1] === 'NAME' ? `<span class="name">${text}</span>` : `<strong>${text}</strong>`;
+    } else {
+      html += escapeHtml(match[0]);
+    }
+    lastIndex = tokenPattern.lastIndex;
+  }
+  return html + escapeHtml(messageTemplate.slice(lastIndex)).replace(/\n/g, '<br>');
 }
 
 /* ------------------------------------------------------------------ */

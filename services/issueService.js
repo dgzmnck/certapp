@@ -19,7 +19,7 @@ async function buildPdf(record) {
 /**
  * Saves a certificate record and renders its PDF. The row is saved first,
  * so if the PDF step fails the error tells the user the certificate number
- * (they can re-download via GET /api/certificate/:no?download=pdf).
+ * (they can re-download via GET /api/certificate/:no?name=...&download=pdf).
  */
 async function issueCertificate(data) {
   const record = await certificateService.createCertificate(data);

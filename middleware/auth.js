@@ -20,10 +20,18 @@ function requireAdmin(req, res, next) {
 
   const session = auth.readSession(req);
   if (session) {
-    req.admin = session;
+    req.admin = { username: session.u, isOwner: Boolean(session.owner) };
     return next();
   }
   return next(new AppError(401, 'Please sign in as admin.'));
 }
 
-module.exports = { requireAdmin };
+function requireOwner(req, res, next) {
+  return requireAdmin(req, res, (err) => {
+    if (err) return next(err);
+    if (!req.admin || !req.admin.isOwner) return next(new AppError(403, 'Only the account owner can manage accounts.'));
+    return next();
+  });
+}
+
+module.exports = { requireAdmin, requireOwner };

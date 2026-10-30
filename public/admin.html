@@ -45,119 +45,161 @@
     </div>
 
     <ul class="nav nav-pills mb-4" id="adminNav">
-      <li class="nav-item"><button class="nav-link active" type="button" data-panel="dashboardPanel">Dashboard</button></li>
+      <li class="nav-item"><button class="nav-link active" type="button" data-panel="certificateTemplatesPanel">Template Maker</button></li>
+      <li class="nav-item"><button class="nav-link" type="button" data-panel="createEventPanel">Create Event</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="eventsPanel">Events</button></li>
-      <li class="nav-item"><button class="nav-link" type="button" data-panel="purposePanel">Purpose Templates</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="signatoriesPanel">Signatories</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="certificatesPanel">Certificates</button></li>
+      <li class="nav-item d-none" id="accountsNavItem"><button class="nav-link" type="button" data-panel="accountsPanel">Accounts</button></li>
     </ul>
 
-    <section class="admin-panel shell p-4 mb-4" id="dashboardPanel">
-      <h2 class="h5 form-heading">Certificate dashboard</h2>
-      <p class="mb-0">Manage event certificates, reusable purpose templates, signatories, and issued certificate records using the sections above.</p>
-    </section>
-
-    <div class="admin-panel" id="eventsPanel" hidden>
-    <!-- Create event -->
-    <section class="shell form-panel mb-4">
-      <h2 class="h5 mb-3 form-heading">New event</h2>
-      <form id="eventForm" novalidate>
-        <div class="row g-3">
-          <div class="col-md-5">
-            <label for="eventName" class="form-label">Event name</label>
-            <input type="text" class="form-control" id="eventName" name="eventName" minlength="2" maxlength="200" required>
-            <div class="invalid-feedback">Enter the event name.</div>
-          </div>
-          <div class="col-md-3">
-            <label for="eventDate" class="form-label">Event date</label>
-            <input type="date" class="form-control" id="eventDate" name="eventDate" required>
-            <div class="invalid-feedback">Choose the date.</div>
-          </div>
-          <div class="col-md-4">
-            <label for="venue" class="form-label">Event place</label>
-            <input type="text" class="form-control" id="venue" name="venue" minlength="2" maxlength="200" required>
-            <div class="invalid-feedback">Enter the venue.</div>
-          </div>
-          <div class="col-md-3">
-            <label for="certificateType" class="form-label">Certificate type</label>
-            <select class="form-select" id="certificateType" disabled><option value="EVENT">EVENT</option></select>
-          </div>
-          <div class="col-md-5">
-            <label for="eventSignatory" class="form-label">Signatory</label>
-            <select class="form-select" id="eventSignatory" name="signatoryId" required></select>
-            <div class="invalid-feedback">Select an active signatory.</div>
-          </div>
-          <div class="col-md-7">
-            <label for="certificateTitle" class="form-label">Certificate title <span class="text-muted">(optional)</span></label>
-            <input type="text" class="form-control" id="certificateTitle" name="certificateTitle" maxlength="120">
-          </div>
-          <div class="col-12 text-md-end">
-            <button type="submit" class="btn btn-primary" id="createBtn">
-              <span class="spinner-border spinner-border-sm me-1 d-none" id="createSpinner" aria-hidden="true"></span>
-              Create event &amp; QR
-            </button>
-          </div>
-        </div>
-      </form>
-    </section>
-
-    <!-- Event list -->
-    <section class="shell">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0 events-table">
-          <thead>
-            <tr>
-              <th>Event</th><th>Date</th><th>Event place</th><th>Status</th><th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="eventRows"></tbody>
-        </table>
-      </div>
-      <p class="p-4 mb-0 text-muted d-none" id="emptyMsg">No events yet. Create one above to get a QR code.</p>
-      <p class="p-4 mb-0 text-muted" id="loadingMsg">Loading events…</p>
-    </section>
-    </div>
-
-    <div class="admin-panel" id="purposePanel" hidden>
+    <div class="admin-panel" id="certificateTemplatesPanel">
       <section class="shell form-panel mb-4">
-        <h2 class="h5 mb-3 form-heading">New purpose template</h2>
-        <form id="purposeTemplateForm" novalidate>
+        <h2 class="h5 mb-3 form-heading">Create reusable certificate template</h2>
+        <p class="text-muted">Define what the organizer supplies for each event, what attendees enter, and the message printed in the certificate. Insert variables as <code>_VARIABLE_KEY_</code>.</p>
+        <form id="certificateTemplateForm" novalidate>
           <div class="row g-3">
-            <div class="col-md-5">
-              <label for="purposeEventPlace" class="form-label">Event place</label>
-              <input type="text" class="form-control" id="purposeEventPlace" name="eventPlace" minlength="2" maxlength="200" required>
-              <div class="invalid-feedback">Enter the event place.</div>
+            <div class="col-md-6">
+              <label for="templateName" class="form-label">Template name</label>
+              <input type="text" class="form-control" id="templateName" name="templateName" maxlength="120" required>
+              <div class="invalid-feedback">Enter a template name.</div>
             </div>
-            <div class="col-md-3">
-              <label for="purposeEventDate" class="form-label">Event date</label>
-              <input type="date" class="form-control" id="purposeEventDate" name="eventDate" required>
-              <div class="invalid-feedback">Choose the date.</div>
-            </div>
-            <div class="col-md-4">
-              <label for="purposeSignatory" class="form-label">Signatory</label>
-              <select class="form-select" id="purposeSignatory" name="signatoryId" required></select>
-              <div class="invalid-feedback">Select an active signatory.</div>
+            <div class="col-md-6">
+              <label for="templateCertificateTitle" class="form-label">Certificate title</label>
+              <input type="text" class="form-control" id="templateCertificateTitle" name="certificateTitle" maxlength="120" required>
+              <div class="invalid-feedback">Enter the certificate title.</div>
             </div>
             <div class="col-12">
-              <label for="templatePurpose" class="form-label">Purpose</label>
-              <textarea class="form-control" id="templatePurpose" name="purpose" rows="3" maxlength="300" required></textarea>
-              <div class="invalid-feedback">Enter the certificate purpose.</div>
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-1">Organizer fields (fixed per event)</label>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="addAdminTemplateField">Add field</button>
+              </div>
+              <div id="adminTemplateFields" class="vstack gap-2"></div>
+              <div class="form-text">Event name, event date, and event place are required fixed fields for every event. Add any extra organizer fields below.</div>
+            </div>
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-1">Attendee fields (entered from the QR link)</label>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="addRecipientTemplateField">Add field</button>
+              </div>
+              <div id="recipientTemplateFields" class="vstack gap-2"></div>
+              <div class="form-text">NAME is included by default. Add any other information attendees must provide.</div>
+            </div>
+            <div class="col-12">
+              <label for="templateVariableSelect" class="form-label">Insert a variable into the message</label>
+              <div class="input-group mb-2">
+                <select class="form-select" id="templateVariableSelect">
+                  <option value="">Select a variable</option>
+                </select>
+                <button type="button" class="btn btn-outline-primary" id="insertTemplateVariable">Insert variable</button>
+              </div>
+              <label for="templateMessage" class="form-label">Certificate message</label>
+              <textarea class="form-control" id="templateMessage" name="messageTemplate" rows="7" maxlength="5000" required>TO WHOM IT MAY CONCERN:
+
+This is to certify that _NAME_ appeared and actively participated during the _EVENT_NAME_ at _EVENT_PLACE_ on _EVENT_DATE_.
+
+Given this _ISSUE_DAY_ of _ISSUE_MONTH_ _ISSUE_YEAR_ at _ISSUE_PLACE_.</textarea>
+              <div class="form-text">Available automatic variables: _ISSUE_DAY_, _ISSUE_MONTH_, _ISSUE_YEAR_, _ISSUE_DATE_, _SIGNATORY_NAME_, _SIGNATORY_TITLE_, and _SIGNATORY_OFFICE_.</div>
+              <div class="invalid-feedback">Enter the certificate message.</div>
             </div>
             <div class="col-12 text-end">
-              <button type="submit" class="btn btn-primary" id="createPurposeBtn">Create template &amp; QR</button>
+              <button type="submit" class="btn btn-primary" id="saveCertificateTemplateBtn">Save template</button>
             </div>
           </div>
         </form>
       </section>
+
       <section class="shell">
+        <h2 class="h5 form-heading p-3 mb-0">Saved templates</h2>
         <div class="table-responsive">
           <table class="table align-middle mb-0 events-table">
-            <thead><tr><th>Place</th><th>Date</th><th>Purpose</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
-            <tbody id="purposeRows"></tbody>
+            <thead><tr><th>Template</th><th>Certificate title</th><th>Fields</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="certificateTemplateRows"></tbody>
           </table>
         </div>
-        <p class="p-4 mb-0 text-muted d-none" id="purposeEmpty">No purpose templates yet.</p>
-        <p class="p-4 mb-0 text-muted" id="purposeLoading">Loading purpose templates…</p>
+        <p class="p-4 mb-0 text-muted d-none" id="certificateTemplateEmpty">No certificate templates yet.</p>
+        <p class="p-4 mb-0 text-muted d-none" id="certificateTemplateLoading">Loading certificate templates…</p>
+      </section>
+    </div>
+
+    <div class="admin-panel" id="createEventPanel" hidden>
+      <section class="shell form-panel mb-3">
+        <h2 class="h5 mb-3 form-heading">Create event and QR link</h2>
+        <form id="templateInstanceForm" novalidate>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6 col-xl-4">
+                <label for="instanceTemplate" class="form-label">Certificate template</label>
+                <select class="form-select" id="instanceTemplate" required>
+                  <option value="">Select a saved template</option>
+                </select>
+                <div class="invalid-feedback">Select a certificate template.</div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <label for="instanceSignatory" class="form-label">Signatory</label>
+                <select class="form-select" id="instanceSignatory" name="signatoryId" required></select>
+                <div class="invalid-feedback">Select an active signatory.</div>
+            </div>
+            <div id="instanceFixedFields" class="row g-3 col-12"></div>
+            <div class="col-12 text-end">
+              <button type="submit" class="btn btn-primary" id="createInstanceBtn">Create event &amp; QR</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <section class="shell form-panel">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+          <div>
+            <h2 class="h5 mb-1 form-heading">Certificate preview</h2>
+            <p class="text-muted small mb-0">Updates as you configure the event details.</p>
+          </div>
+          <div class="btn-group btn-group-sm" role="group" aria-label="Certificate preview zoom">
+            <button type="button" class="btn btn-outline-primary js-preview-zoom" data-target="eventPreviewFrame" data-step="-0.1" aria-label="Zoom out">−</button>
+            <button type="button" class="btn btn-outline-primary" data-preview-zoom-label="eventPreviewFrame" disabled>100%</button>
+            <button type="button" class="btn btn-outline-primary js-preview-zoom" data-target="eventPreviewFrame" data-step="0.1" aria-label="Zoom in">+</button>
+            <button type="button" class="btn btn-outline-primary js-preview-zoom-reset" data-target="eventPreviewFrame">Reset</button>
+          </div>
+        </div>
+        <p class="text-danger d-none" id="eventPreviewError" role="alert"></p>
+        <div class="certificate-preview-scroll">
+          <iframe id="eventPreviewFrame" title="Event certificate preview" class="certificate-preview-frame"></iframe>
+        </div>
+      </section>
+    </div>
+
+    <div class="admin-panel" id="eventsPanel" hidden>
+      <section class="shell mb-3">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="h5 form-heading mb-0">Events</h2>
+            <div class="text-muted small">Open an event preview or manage its QR link and status.</div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="newEventBtn">Create event</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 events-table">
+            <thead>
+              <tr><th>Event</th><th>Date</th><th>Event place</th><th>Certificates issued</th><th>Status</th><th class="text-end">Actions</th></tr>
+            </thead>
+            <tbody id="eventRows"></tbody>
+          </table>
+        </div>
+        <p class="p-4 mb-0 text-muted d-none" id="emptyMsg">No events yet. Create one from a saved certificate template.</p>
+        <p class="p-4 mb-0 text-muted" id="loadingMsg">Loading events…</p>
+      </section>
+      <section class="shell form-panel d-none" id="eventSavedPreview">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+          <h2 class="h5 mb-1 form-heading" id="eventSavedPreviewTitle">Event certificate preview</h2>
+          <div class="btn-group btn-group-sm" role="group" aria-label="Saved event preview zoom">
+            <button type="button" class="btn btn-outline-primary js-preview-zoom" data-target="savedEventPreviewFrame" data-step="-0.1" aria-label="Zoom out">−</button>
+            <button type="button" class="btn btn-outline-primary" data-preview-zoom-label="savedEventPreviewFrame" disabled>100%</button>
+            <button type="button" class="btn btn-outline-primary js-preview-zoom" data-target="savedEventPreviewFrame" data-step="0.1" aria-label="Zoom in">+</button>
+            <button type="button" class="btn btn-outline-primary js-preview-zoom-reset" data-target="savedEventPreviewFrame">Reset</button>
+          </div>
+        </div>
+        <p class="text-danger d-none" id="savedEventPreviewError" role="alert"></p>
+        <div class="certificate-preview-scroll">
+          <iframe id="savedEventPreviewFrame" title="Selected event certificate preview" class="certificate-preview-frame"></iframe>
+        </div>
       </section>
     </div>
 
@@ -207,10 +249,78 @@
     </div>
 
     <div class="admin-panel" id="certificatesPanel" hidden>
-      <section class="shell form-panel">
-        <h2 class="h5 form-heading">Issued certificates</h2>
-        <p>Review and revoke issued certificate records without changing the existing verification links.</p>
-        <button class="btn btn-primary" id="allCertificatesBtn">View certificates</button>
+      <section class="shell">
+        <div class="p-3 border-bottom">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+              <h2 class="h5 form-heading mb-0">Issued certificates</h2>
+            </div>
+            <div class="col-md-4">
+              <label class="visually-hidden" for="certificateSearch">Search by name or certificate details</label>
+              <input type="search" class="form-control form-control-sm" id="certificateSearch" placeholder="Search name or details">
+            </div>
+            <div class="col-md-4">
+              <label class="visually-hidden" for="certificateEventFilter">Filter by event</label>
+              <select class="form-select form-select-sm" id="certificateEventFilter">
+                <option value="">All events / certificates</option>
+              </select>
+            </div>
+          </div>
+          <div class="text-muted small" id="recipSummary"></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 events-table">
+            <thead>
+              <tr><th>Reference No.</th><th>Name</th><th>Certificate / details</th><th>Issued</th><th>Status</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody id="recipRows"></tbody>
+          </table>
+        </div>
+        <p class="p-4 mb-0 text-muted" id="recipLoading">Loading certificates…</p>
+        <p class="p-4 mb-0 text-muted d-none" id="recipEmpty">No certificates have been issued yet.</p>
+      </section>
+    </div>
+
+    <div class="admin-panel" id="accountsPanel" hidden>
+      <section class="shell form-panel mb-4">
+        <h2 class="h5 mb-2 form-heading">Create an admin account</h2>
+        <p class="text-muted">Accounts have full admin access. Passwords are protected with salted one-way hashing and are never shown after creation.</p>
+        <form id="accountForm" novalidate>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label for="accountUsername" class="form-label">Username</label>
+              <input type="text" class="form-control" id="accountUsername" name="username"
+                     minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" required>
+              <div class="invalid-feedback">Use 3–32 letters, numbers, dots, underscores, or hyphens.</div>
+            </div>
+            <div class="col-md-4">
+              <label for="accountPassword" class="form-label">Password</label>
+              <input type="password" class="form-control" id="accountPassword" name="password"
+                     minlength="12" maxlength="128" autocomplete="new-password" required>
+              <div class="invalid-feedback">Use a password with at least 12 characters.</div>
+            </div>
+            <div class="col-md-4">
+              <label for="accountPasswordConfirm" class="form-label">Confirm password</label>
+              <input type="password" class="form-control" id="accountPasswordConfirm"
+                     minlength="12" maxlength="128" autocomplete="new-password" required>
+              <div class="invalid-feedback">Enter the same password again.</div>
+            </div>
+            <div class="col-12 text-end">
+              <button type="submit" class="btn btn-primary" id="createAccountBtn">Create account</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <section class="shell">
+        <h2 class="h5 form-heading p-3 mb-0">Accounts</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 events-table">
+            <thead><tr><th>Username</th><th>Status</th><th>Created</th></tr></thead>
+            <tbody id="accountRows"></tbody>
+          </table>
+        </div>
+        <p class="p-4 mb-0 text-muted d-none" id="accountEmpty">No additional accounts yet.</p>
+        <p class="p-4 mb-0 text-muted" id="accountLoading">Loading accounts…</p>
       </section>
     </div>
   </main>
@@ -233,35 +343,6 @@
         <div class="modal-footer">
           <a class="btn btn-primary" id="qrDownload" href="#">Download QR (PNG)</a>
           <button type="button" class="btn btn-outline-primary" id="qrPrint">Print</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Recipients modal: who availed certificates for an event -->
-  <div class="modal fade" id="recipModal" tabindex="-1" aria-labelledby="recipTitle" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div>
-            <h2 class="modal-title h5" id="recipTitle"></h2>
-            <div class="text-muted small" id="recipSummary"></div>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-0">
-          <div class="table-responsive">
-            <table class="table align-middle mb-0 events-table">
-              <thead>
-                <tr>
-                  <th>CA Reference No.</th><th>Name</th><th class="d-none" id="recipDetailsTh">Details</th><th>Purpose</th><th>Issued</th><th>Status</th><th class="text-end">Action</th>
-                </tr>
-              </thead>
-              <tbody id="recipRows"></tbody>
-            </table>
-          </div>
-          <p class="p-4 mb-0 text-muted" id="recipLoading">Loading…</p>
-          <p class="p-4 mb-0 text-muted d-none" id="recipEmpty">No certificates have been issued here yet.</p>
         </div>
       </div>
     </div>

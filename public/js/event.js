@@ -1,4 +1,4 @@
-/** QR landing page: loads the event, then asks only for the attendee's name. */
+/** QR landing page: loads event settings and asks for its configured attendee fields. */
 $(function () {
   'use strict';
 
@@ -28,9 +28,37 @@ $(function () {
     $.getJSON('/api/events/' + encodeURIComponent(eventId))
       .done(function (res) {
         var ev = res.data;
+        $('#pageTitle').text(ev.certificateTitle || 'Certificate of Appearance');
         $('#evName').text(ev.eventName);
         $('#evDate').text(Cert.formatDate(ev.eventDate));
         $('#evVenue').text(ev.venue);
+        if (ev.templateMode) {
+          $('#eventDetails .event-standard-fact').addClass('d-none');
+          $('#eventDetails').find('dt:not(.event-standard-fact), dd:not(.event-standard-fact)').remove();
+          (ev.fixedFieldSummary || []).forEach(function (field) {
+            $('#eventDetails').append(
+              $('<dt>').text(field.label),
+              $('<dd>').text(field.key === 'EVENT_DATE' ? Cert.formatDate(field.value) : field.value)
+            );
+          });
+          $('#nameFieldContainer').addClass('d-none');
+          $('#fullName').prop({ disabled: true, required: false });
+          var $dynamicFields = $('#dynamicRecipientFields').empty();
+          (ev.recipientFields || []).forEach(function (field) {
+            var inputId = 'recipient-' + field.key;
+            var $input = $('<input type="text" class="form-control">')
+              .attr({ id: inputId, name: field.key, maxlength: field.key === 'NAME' ? 120 : 300 })
+              .prop('required', field.required);
+            if (field.key === 'NAME') $input.attr('autocomplete', 'name');
+            var $group = $('<div class="mb-3">')
+              .append($('<label class="form-label">').attr('for', inputId).text(field.label));
+            $group.append($input, $('<div class="invalid-feedback">').text('Enter ' + field.label.toLowerCase() + '.'));
+            if (field.key === 'NAME') {
+              $group.append($('<div class="form-text">').text('This is printed on your certificate exactly as typed.'));
+            }
+            $dynamicFields.append($group);
+          });
+        }
         $('#eventLoading').addClass('d-none');
         $('#eventDetails').removeClass('d-none');
         document.title = ev.eventName + ' – Certificate';
@@ -61,17 +89,26 @@ $(function () {
     $name.val($.trim($name.val()));
     if (!this.checkValidity()) {
       $form.addClass('was-validated');
-      $name.trigger('focus');
-      Cert.showToast('Please enter your full name.', 'warning');
+      $form.find(':invalid').first().trigger('focus');
+      Cert.showToast('Please correct the highlighted fields.', 'warning');
       return;
     }
     $form.removeClass('was-validated');
 
     setLoading(true);
 
-    Cert.postForPdf('/api/events/' + encodeURIComponent(eventId) + '/certificate', {
-      fullName: $name.val()
-    })
+    var payload;
+    if ($('#dynamicRecipientFields').children().length) {
+      var fields = {};
+      $('#dynamicRecipientFields :input').each(function () {
+        fields[this.name] = $.trim($(this).val());
+      });
+      payload = { fields: fields };
+    } else {
+      payload = { fullName: $name.val() };
+    }
+
+    Cert.postForPdf('/api/events/' + encodeURIComponent(eventId) + '/certificate', payload)
       .done(function (data, textStatus, jqXHR) {
         var blob = data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' });
         var filename = Cert.getFilename(jqXHR, 'certificate-of-appearance.pdf');

@@ -4,6 +4,7 @@ const express = require('express');
 
 const eventService = require('../services/eventService');
 const signatoryService = require('../services/signatoryService');
+const certificateTemplateService = require('../services/certificateTemplateService');
 const { issueCertificate, sendPdf } = require('../services/issueService');
 const { AppError } = require('../utils/errors');
 const { asyncHandler } = require('../middleware/errorHandler');
@@ -36,6 +37,13 @@ router.get(
         venue: event.venue,
         certificateType: event.certificateType || 'EVENT',
         certificateTitle: event.certificateTitle || '',
+        templateMode: Boolean(event.templateId),
+        recipientFields: event.recipientFields || [],
+        fixedFieldSummary: (event.adminFields || []).map((field) => ({
+          key: field.key,
+          label: field.label,
+          value: (event.fixedValues || {})[field.key] || '',
+        })).filter((field) => field.value),
         open: event.status === eventService.STATUS.ACTIVE,
         signatoryReady: Boolean(signatory && signatory.status === signatoryService.STATUS.ACTIVE),
       },
@@ -44,9 +52,9 @@ router.get(
 );
 
 /**
- * POST /api/events/:eventId/certificate  { fullName }
- * Event details come from the sheet, so the attendee can only type their
- * own name.
+ * POST /api/events/:eventId/certificate
+ * Legacy events accept { fullName }; template events accept configured
+ * attendee values under { fields }.
  */
 router.post(
   '/:eventId/certificate',
@@ -56,7 +64,13 @@ router.post(
       throw new AppError(403, 'This event is no longer issuing certificates.');
     }
 
-    const { value, errors } = validateAttendeeInput(req.body);
+    const dynamicEvent = Boolean(event.templateId);
+    const dynamicValues = dynamicEvent
+      ? certificateTemplateService.validateFieldValues(req.body && req.body.fields, event.recipientFields)
+      : null;
+    const { value, errors } = dynamicEvent
+      ? { value: { fullName: dynamicValues.values.NAME || '' }, errors: dynamicValues.errors }
+      : validateAttendeeInput(req.body);
     if (Object.keys(errors).length) {
       throw new AppError(400, 'Please correct the highlighted fields.', { fields: errors });
     }
@@ -79,6 +93,14 @@ router.post(
       signatoryTitle: signatory.title,
       signatoryOffice: signatory.office,
       signatoryESignature: signatory.eSignature,
+      ...(dynamicEvent ? {
+        templateId: event.templateId,
+        messageTemplate: event.messageTemplate,
+        fieldValues: { ...event.fixedValues, ...dynamicValues.values },
+        fieldLabels: Object.fromEntries(
+          [...event.adminFields, ...event.recipientFields].map((field) => [field.key, field.label])
+        ),
+      } : {}),
     });
     return sendPdf(res, pdf, record.certificateNo);
   })

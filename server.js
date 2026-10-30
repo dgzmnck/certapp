@@ -79,6 +79,18 @@ app.use(express.static(path.join(__dirname, 'public'), { maxAge: config.isProduc
 // Health check
 app.get('/api/health', (req, res) => res.json({ success: true, status: 'ok' }));
 
+// Public issuer branding for the verifier page.
+app.get('/api/branding', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json({
+    success: true,
+    data: {
+      issuerName: config.branding.issuerName,
+      issuerAddress: config.branding.issuerAddress,
+    },
+  });
+});
+
 // Pretty URLs. On Vercel these are handled by the rewrites in vercel.json.
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/e/:eventId', (req, res) => res.sendFile(path.join(__dirname, 'public', 'event.html')));

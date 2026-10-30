@@ -38,6 +38,10 @@ const HEADERS = [
   'SIGNATORY_OFFICE',
   'SIGNATORY_ESIGNATURE',
   'CERTIFICATE_TITLE',
+  'TEMPLATE_ID',
+  'MESSAGE_TEMPLATE',
+  'FIELD_VALUES',
+  'FIELD_LABELS',
 ];
 
 const HEADER_ALIASES = {
@@ -66,6 +70,9 @@ const HEADER_ALIASES = {
   signatoryoffice: 'SIGNATORY_OFFICE',
   signatoryesignature: 'SIGNATORY_ESIGNATURE',
   certificatetitle: 'CERTIFICATE_TITLE',
+  messagetemplate: 'MESSAGE_TEMPLATE',
+  fieldvalues: 'FIELD_VALUES',
+  templateid: 'TEMPLATE_ID',
 };
 
 function canonicalHeader(header) {
@@ -261,6 +268,10 @@ function toRow(r) {
     r.signatoryOffice || '',
     r.signatoryESignature || '',
     r.certificateTitle || '',
+    r.templateId || '',
+    r.messageTemplate || '',
+    JSON.stringify(r.fieldValues || {}),
+    JSON.stringify(r.fieldLabels || {}),
   ];
 }
 
@@ -285,6 +296,10 @@ function fromRow(row) {
     signatoryOffice: row[15] || '',
     signatoryESignature: row[16] || '',
     certificateTitle: row[17] || '',
+    templateId: row[18] || '',
+    messageTemplate: row[19] || '',
+    fieldValues: row[20] ? JSON.parse(row[20]) : {},
+    fieldLabels: row[21] ? JSON.parse(row[21]) : {},
   };
 }
 

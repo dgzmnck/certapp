@@ -37,6 +37,8 @@ const config = {
     eventsSheetName: process.env.GOOGLE_EVENTS_SHEET_NAME || 'Events',
     signatoriesSheetName: process.env.GOOGLE_SIGNATORIES_SHEET_NAME || 'Signatories',
     purposeTemplatesSheetName: process.env.GOOGLE_PURPOSE_TEMPLATES_SHEET_NAME || 'PurposeTemplates',
+    certificateTemplatesSheetName: process.env.GOOGLE_CERTIFICATE_TEMPLATES_SHEET_NAME || 'CertificateTemplates',
+    accountsSheetName: process.env.GOOGLE_ACCOUNTS_SHEET_NAME || 'AdminAccounts',
   },
 
   branding: {

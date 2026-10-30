@@ -17,14 +17,14 @@
 
       <aside class="col-lg-5 intro">
         <img src="/logo.svg" alt="" class="intro-logo" width="64" height="64">
-        <h1 class="intro-title">Certificate of Appearance</h1>
+        <h1 class="intro-title" id="pageTitle">Certificate of Appearance</h1>
 
         <div id="eventLoading" class="intro-text">Loading event…</div>
 
         <dl class="event-details d-none" id="eventDetails">
-          <dt>Event</dt><dd id="evName"></dd>
-          <dt>Date</dt><dd id="evDate"></dd>
-          <dt>Event place</dt><dd id="evVenue"></dd>
+          <dt class="event-standard-fact">Event</dt><dd class="event-standard-fact" id="evName"></dd>
+          <dt class="event-standard-fact">Date</dt><dd class="event-standard-fact" id="evDate"></dd>
+          <dt class="event-standard-fact">Event place</dt><dd class="event-standard-fact" id="evVenue"></dd>
         </dl>
       </aside>
 
@@ -41,13 +41,14 @@
         <form id="eventForm" class="d-none" novalidate>
           <h2 class="h4 mb-3 form-heading">Enter your details</h2>
           <div class="row g-3">
-            <div class="col-12">
+            <div class="col-12" id="nameFieldContainer">
               <label for="fullName" class="form-label">Full name</label>
               <input type="text" class="form-control" id="fullName" name="fullName"
                      minlength="2" maxlength="120" autocomplete="name" required>
               <div class="invalid-feedback">Enter your full name (at least 2 characters).</div>
               <div class="form-text">This is printed on your certificate exactly as typed.</div>
             </div>
+            <div class="col-12" id="dynamicRecipientFields"></div>
 
             <div class="col-12 pt-2">
               <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">

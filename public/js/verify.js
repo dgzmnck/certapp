@@ -1,14 +1,27 @@
 /**
  * Home page: certificate checker.
- * Verifies a certificate number against the Google Sheet and lets the visitor
- * download the certificate. Also supports /?id=2026-1029-001 (from the QR code).
+ * Verifies a certificate number and recipient name, and supports prefilled QR links.
  */
 $(function () {
   'use strict';
 
   var PATTERN = /^(\d{4}-\d{4}-\d{3,}|COA-\d{4}-\d{6})$/;
   var $input = $('#certNo');
+  var $nameInput = $('#certName');
   var currentNo = '';
+  var currentName = '';
+
+  $.getJSON('/api/branding')
+    .done(function (res) {
+      var branding = res.data || {};
+      if (!branding.issuerName && !branding.issuerAddress) return;
+      $('#issuerName').text(branding.issuerName || '');
+      $('#issuerAddress').text(branding.issuerAddress || '').toggleClass('d-none', !branding.issuerAddress);
+      $('#verifierIssuer').removeClass('d-none');
+    })
+    .fail(function (jqXHR, textStatus) {
+      console.error('Could not load issuer branding:', Cert.errorMessage(jqXHR, textStatus));
+    });
 
   function setLoading(isLoading) {
     $('#verifyBtn').prop('disabled', isLoading);
@@ -43,12 +56,13 @@ $(function () {
   }
 
   /** Checks one certificate number against the server. */
-  function verify(no) {
+  function verify(no, name) {
     currentNo = no;
+    currentName = name;
     clearResults();
     setLoading(true);
 
-    $.getJSON('/api/certificate/' + encodeURIComponent(no))
+    $.getJSON('/api/certificate/' + encodeURIComponent(no), { name: name })
       .done(function (res) { showValid(res.data); })
       .fail(function (jqXHR, textStatus) {
         // 404 = not on record; anything else is a technical problem
@@ -62,25 +76,34 @@ $(function () {
   $('#verifyForm').on('submit', function (e) {
     e.preventDefault();
     var no = $.trim($input.val()).toUpperCase();
+    var name = $.trim($nameInput.val());
     $input.val(no);
+    $nameInput.val(name);
 
-    var valid = PATTERN.test(no);
-    $input.toggleClass('is-invalid', !valid);
-    $('#certNoError').toggleClass('d-none', valid);
-    if (!valid) {
+    var validNo = PATTERN.test(no);
+    var validName = name.length >= 2 && name.length <= 120;
+    $input.toggleClass('is-invalid', !validNo);
+    $nameInput.toggleClass('is-invalid', !validName);
+    $('#certNoError').toggleClass('d-none', validNo);
+    $('#certNameError').toggleClass('d-none', validName);
+    if (!validNo || !validName) {
       clearResults();
-      $input.trigger('focus');
+      (validNo ? $nameInput : $input).trigger('focus');
       return;
     }
 
-    // Keep the address bar shareable: /?id=2026-1029-001
-    if (window.history && history.replaceState) history.replaceState(null, '', '/?id=' + encodeURIComponent(no));
-    verify(no);
+    var query = new URLSearchParams({ id: no, name: name });
+    if (window.history && history.replaceState) history.replaceState(null, '', '/?' + query.toString());
+    verify(no, name);
   });
 
   $input.on('input', function () {
     $input.removeClass('is-invalid');
     $('#certNoError').addClass('d-none');
+  });
+  $nameInput.on('input', function () {
+    $nameInput.removeClass('is-invalid');
+    $('#certNameError').addClass('d-none');
   });
 
   /* ------------------------------ Download ------------------------------ */
@@ -90,7 +113,10 @@ $(function () {
     $('#dlSpinner').removeClass('d-none');
     $('#downloadText').text('Preparing certificate…');
 
-    Cert.getForPdf('/api/certificate/' + encodeURIComponent(currentNo) + '?download=pdf')
+    Cert.getForPdf('/api/certificate/' + encodeURIComponent(currentNo) + '?' + new URLSearchParams({
+      download: 'pdf',
+      name: currentName
+    }).toString())
       .done(function (data, textStatus, jqXHR) {
         var blob = data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' });
         Cert.downloadBlob(blob, Cert.getFilename(jqXHR, currentNo + '.pdf'));
@@ -108,9 +134,16 @@ $(function () {
 
   /* ------------------------------ From QR link ------------------------------ */
 
-  var fromUrl = new URLSearchParams(window.location.search).get('id');
+  var params = new URLSearchParams(window.location.search);
+  var fromUrl = params.get('id');
+  var fromName = params.get('name');
   if (fromUrl) {
     $input.val(fromUrl.toUpperCase());
-    $('#verifyForm').trigger('submit');
+    if (fromName) {
+      $nameInput.val(fromName);
+      $('#verifyForm').trigger('submit');
+    } else {
+      $nameInput.trigger('focus');
+    }
   }
 });

@@ -5,7 +5,7 @@
  *
  * After login the server sends an HttpOnly cookie holding
  *   base64url(payload) + "." + HMAC-SHA256(payload, SESSION_SECRET)
- * The payload only contains the username and an expiry time. Changing
+ * The payload contains the username, owner flag, and expiry time. Changing
  * SESSION_SECRET logs everyone out.
  */
 
@@ -38,9 +38,9 @@ function sign(data) {
   return crypto.createHmac('sha256', config.admin.sessionSecret).update(data).digest('base64url');
 }
 
-function createToken(username) {
+function createToken(username, isOwner) {
   const payload = Buffer.from(
-    JSON.stringify({ u: username, exp: Date.now() + config.admin.sessionHours * 3600 * 1000 })
+    JSON.stringify({ u: username, owner: Boolean(isOwner), exp: Date.now() + config.admin.sessionHours * 3600 * 1000 })
   ).toString('base64url');
   return `${payload}.${sign(payload)}`;
 }
@@ -80,8 +80,8 @@ function readSession(req) {
   return verifyToken(parseCookies(req.headers.cookie)[COOKIE_NAME]);
 }
 
-function setSessionCookie(res, username) {
-  res.cookie(COOKIE_NAME, createToken(username), {
+function setSessionCookie(res, username, isOwner) {
+  res.cookie(COOKIE_NAME, createToken(username, isOwner), {
     httpOnly: true,
     sameSite: 'strict',
     secure: config.isProduction, // HTTPS only on Vercel

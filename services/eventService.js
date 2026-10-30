@@ -20,6 +20,11 @@ const EVENT_HEADERS = [
   'SIGNATORY_ID',
   'CREATED_AT',
   'CERTIFICATE_TITLE',
+  'TEMPLATE_ID',
+  'MESSAGE_TEMPLATE',
+  'ADMIN_FIELDS',
+  'RECIPIENT_FIELDS',
+  'FIXED_VALUES',
 ];
 const STATUS = { ACTIVE: 'Active', CLOSED: 'Closed' };
 
@@ -28,24 +33,41 @@ const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const tab = () => config.google.eventsSheetName;
 
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    throw new AppError(500, 'A saved event contains invalid certificate template data.');
+  }
+}
+
 function generateEventId() {
   let id = '';
   for (let i = 0; i < 8; i += 1) id += ID_ALPHABET[crypto.randomInt(ID_ALPHABET.length)];
   return id;
 }
 
-const fromRow = (row, rowNumber) => ({
-  eventId: row[0] || '',
-  eventName: row[1] || '',
-  eventDate: row[2] || '',
-  venue: row[3] || '',
-  status: row[4] || STATUS.ACTIVE,
-  certificateType: row[5] || 'EVENT',
-  signatoryId: row[6] || '',
-  createdAt: row[7] || '',
-  certificateTitle: row[8] || '',
-  rowNumber,
-});
+const fromRow = (row, rowNumber) => {
+  const fixedValues = parseJson(row[13], {});
+  return {
+    eventId: row[0] || '',
+    eventName: row[1] || fixedValues.EVENT_NAME || '',
+    eventDate: row[2] || fixedValues.EVENT_DATE || '',
+    venue: row[3] || fixedValues.EVENT_PLACE || fixedValues.EVENTPLACE || '',
+    status: row[4] || STATUS.ACTIVE,
+    certificateType: row[5] || 'EVENT',
+    signatoryId: row[6] || '',
+    createdAt: row[7] || '',
+    certificateTitle: row[8] || '',
+    templateId: row[9] || '',
+    messageTemplate: row[10] || '',
+    adminFields: parseJson(row[11], []),
+    recipientFields: parseJson(row[12], []),
+    fixedValues,
+    rowNumber,
+  };
+};
 
 /** Reads every event row (oldest first). */
 async function readAll() {
@@ -53,7 +75,7 @@ async function readAll() {
   const res = await sheet.callApi('readEvents', (api) =>
     api.spreadsheets.values.get({
       spreadsheetId: config.google.sheetId,
-      range: sheet.rangeIn(tab(), 'A2:I'),
+      range: sheet.rangeIn(tab(), 'A2:N'),
     })
   );
   return (res.data.values || []).map((row, index) => fromRow(row, index + 2));
@@ -85,12 +107,17 @@ async function createEvent(data) {
     signatoryId: data.signatoryId,
     certificateTitle: data.certificateTitle || '',
     createdAt: new Date().toISOString(),
+    templateId: data.templateId || '',
+    messageTemplate: data.messageTemplate || '',
+    adminFields: data.adminFields || [],
+    recipientFields: data.recipientFields || [],
+    fixedValues: data.fixedValues || {},
   };
 
   await sheet.callApi('createEvent', (api) =>
     api.spreadsheets.values.append({
       spreadsheetId: config.google.sheetId,
-      range: sheet.rangeIn(tab(), 'A:I'),
+      range: sheet.rangeIn(tab(), 'A:N'),
       valueInputOption: 'RAW', // text stays text; no formulas are evaluated
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
@@ -98,6 +125,9 @@ async function createEvent(data) {
           event.eventId, event.eventName, event.eventDate, event.venue,
           event.status, event.certificateType, event.signatoryId,
           event.createdAt, event.certificateTitle,
+          event.templateId, event.messageTemplate,
+          JSON.stringify(event.adminFields), JSON.stringify(event.recipientFields),
+          JSON.stringify(event.fixedValues),
         ]],
       },
     })
@@ -127,12 +157,6 @@ async function updateEventDetails(eventId, data) {
   const event = rows.find((item) => item.eventId === eventId);
   if (!event) throw new AppError(404, 'Event not found.');
   const requests = [];
-  if (data.signatoryId) {
-    requests.push({
-      range: sheet.rangeIn(tab(), `G${event.rowNumber}`),
-      values: [[data.signatoryId]],
-    });
-  }
   if (data.certificateTitle !== undefined) {
     requests.push({
       range: sheet.rangeIn(tab(), `I${event.rowNumber}`),

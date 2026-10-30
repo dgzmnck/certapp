@@ -4,22 +4,14 @@ const QRCode = require('qrcode');
 const config = require('../config');
 
 /**
- * Builds the text encoded in the QR code:
- * Certificate No, Full Name, Event and Issue Date.
- * When BASE_URL is configured a link to the verification page is added;
- * scanning it opens the checker with the certificate number pre-filled.
+ * Builds a verifier URL that pre-fills the certificate number and recipient name.
  */
 function buildQrPayload(record) {
-  const lines = [
-    `CA Reference No: ${record.certificateNo}`,
-    `Name: ${record.fullName}`,
-  ];
-  if (record.eventName) lines.push(`Event: ${record.eventName}`); // absent on no-event certificates
-  lines.push(`Issue Date: ${record.issueDate}`);
-  if (config.baseUrl) {
-    lines.push(`Verify: ${config.baseUrl}/?id=${encodeURIComponent(record.certificateNo)}`);
-  }
-  return lines.join('\n');
+  const query = new URLSearchParams({
+    id: record.certificateNo,
+    name: record.fullName,
+  });
+  return `${config.baseUrl}/?${query.toString()}`;
 }
 
 /** Returns a PNG data URI that can be embedded in the certificate HTML. */

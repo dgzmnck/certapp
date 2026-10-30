@@ -123,7 +123,7 @@
       letter-spacing: 0.06em;
       line-height: 1.05;
       text-align: center;
-      margin: 0 0 7mm;
+      margin: 9mm 0 7mm;
     }
     .title::after {
       content: '';
@@ -151,10 +151,15 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      border-bottom: 0.35mm solid var(--green);
       padding: 0 1mm;
+      text-decoration: underline;
+      text-decoration-color: var(--green);
+      text-decoration-thickness: 0.35mm;
+      text-underline-offset: 1mm;
     }
     .statement strong { font-weight: 700; }
+    .statement.dynamic { text-indent: 0; white-space: pre-line; text-align: left; line-height: 1.25; }
+    .statement.dynamic strong { font-weight: 600; }
 
     /* ---- "CA without event" layout ---- */
     .statement.noevent { font-size: 18pt; text-indent: 0; }
@@ -195,7 +200,6 @@
       white-space: nowrap;
     }
     .sign-title { margin: 1mm 0 0; font-size: 10.5pt; line-height: 1.15; }
-    .issued { margin: 5mm 0 0; font-size: 10.5pt; line-height: 1.15; }
     .ref-no { margin: 1.2mm 0 0; font-size: 10.5pt; line-height: 1.15; }
     .qr {
       position: absolute;
@@ -245,7 +249,11 @@
       <main class="main">
         <h1 class="title"><%= certificate.certificateTitle || 'Certificate of Appearance' %></h1>
 
-        <% if (isPurpose) { %>
+        <% if (certificate.messageTemplate) { %>
+        <div class="letter">
+          <p class="statement dynamic"><%- renderedMessage %></p>
+        </div>
+        <% } else if (isPurpose) { %>
         <div class="letter">
           <p class="statement noevent">
             <span class="caps">This is to certify that</span>
@@ -274,8 +282,7 @@
           <% if (signatureImage) { %><img class="signature-image" src="<%= signatureImage %>" alt="Electronic signature"><% } %>
           <p class="sign-name"><%= signatory.name %></p>
           <p class="sign-title"><%= signatory.title %><% if (signatory.office) { %>, <%= signatory.office %><% } %></p>
-          <p class="issued">Date Issued: <%= issueDateLong %></p>
-          <p class="ref-no">CA Reference No: <%= certificate.certificateNo %></p>
+          <p class="ref-no">Reference No.: <%= certificate.certificateNo %></p>
         </div>
         <img class="qr" src="<%= qrDataUri %>" alt="Verification QR code">
       </footer>

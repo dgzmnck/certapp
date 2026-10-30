@@ -12,6 +12,15 @@ const { buildPdf, sendPdf } = require('../services/issueService');
 
 const router = express.Router();
 
+function normalizeRecipientName(name) {
+  return String(name)
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 /** Purpose certificates are now issued only from admin-created template links. */
 router.post('/request', (req, res, next) => {
   next(new AppError(410, 'Purpose certificates must be issued from a template QR link provided by an administrator.'));
@@ -54,9 +63,15 @@ router.get(
     if (!isValidCertificateNo(certificateNo)) {
       throw new AppError(400, 'The CA Reference No. must look like 2026-1029-001.');
     }
+    const recipientName = typeof req.query.name === 'string' ? req.query.name.trim() : '';
+    if (recipientName.length < 2 || recipientName.length > 120) {
+      throw new AppError(400, 'Enter the name printed on the certificate.');
+    }
 
     const record = await certificateService.getCertificate(certificateNo);
-    if (!record) throw new AppError(404, `No certificate was found with CA Reference No. ${certificateNo}.`);
+    if (!record || normalizeRecipientName(record.fullName) !== normalizeRecipientName(recipientName)) {
+      throw new AppError(404, 'No certificate matches that reference number and name.');
+    }
 
     // A rejected certificate can no longer be verified or downloaded.
     if (record.status === STATUS.REJECTED) {
