@@ -66,11 +66,12 @@ const lookupLimiter = rateLimit({
 
 // Slow down password guessing on the admin login (per server instance).
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
+  windowMs: 5 * 60 * 1000,
+  limit: 5,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' },
+  message: { success: false, message: 'Too many failed login attempts. Please try again in 5 minutes.' },
 });
 
 // Static files (on Vercel, /public is served by the CDN automatically).
