@@ -303,7 +303,10 @@ $(function () {
     var $remove = $('<button type="button" class="btn btn-outline-danger btn-sm">').text('Remove');
     if (fixed || (group === 'recipient' && key === 'NAME')) $remove.prop('disabled', true);
     $row.append($('<div class="col-md-2 text-md-end">').append($remove));
-    $remove.on('click', function () { $row.remove(); });
+    $remove.on('click', function () {
+      $row.remove();
+      refreshTemplateVariableSelect();
+    });
     $('#' + group + 'TemplateFields').append($row);
   }
 
@@ -322,11 +325,7 @@ $(function () {
       $('<option>').val('').text('Select a variable')
     );
     var variables = collectTemplateFields('admin').concat(collectTemplateFields('recipient'))
-      .map(function (field) { return field.key; })
-      .concat([
-        'ISSUE_DAY', 'ISSUE_MONTH', 'ISSUE_YEAR', 'ISSUE_DATE',
-        'SIGNATORY_NAME', 'SIGNATORY_TITLE', 'SIGNATORY_OFFICE'
-      ]);
+      .map(function (field) { return field.key; });
     Array.from(new Set(variables.filter(Boolean))).forEach(function (key) {
       $select.append($('<option>').val(key).text('_' + key + '_'));
     });
