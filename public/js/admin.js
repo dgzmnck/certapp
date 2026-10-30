@@ -320,6 +320,56 @@ $(function () {
     }).get();
   }
 
+  function clearTemplateFormErrors() {
+    $('#templateFormErrors').addClass('d-none');
+    $('#templateFormErrorList').empty();
+    $('#certificateTemplateForm .server-invalid').removeClass('server-invalid');
+    $('#certificateTemplateForm .template-field-error').remove();
+    $('#certificateTemplateForm .is-invalid').removeClass('is-invalid');
+  }
+
+  function showTemplateFormErrors(fields) {
+    clearTemplateFormErrors();
+    var $form = $('#certificateTemplateForm');
+    var $list = $('#templateFormErrorList');
+    var firstInvalid = null;
+    Object.keys(fields || {}).forEach(function (name) {
+      var message = fields[name];
+      $list.append($('<li>').text(message));
+      var match = /^(adminFields|recipientFields)\.(\d+)$/.exec(name);
+      if (match) {
+        var $row = $('#' + match[1] + ' .template-field-row').eq(Number(match[2]));
+        if ($row.length) {
+          $row.addClass('server-invalid');
+          $row.append($('<div class="col-12 template-field-error">').text(message));
+          if (!firstInvalid) firstInvalid = $row.find('input').first();
+        }
+        return;
+      }
+
+      if (name === 'adminFields' || name === 'recipientFields') {
+        var $container = $('#' + (name === 'adminFields' ? 'adminTemplateFields' : 'recipientTemplateFields'));
+        $container.after($('<div class="template-field-error">').text(message));
+        if (!firstInvalid) firstInvalid = $container.find('input').first();
+        return;
+      }
+
+      var $input = $form.find('[name="' + name + '"]');
+      if ($input.length) {
+        $input.addClass('is-invalid');
+        $input.siblings('.invalid-feedback').text(message);
+        if (!firstInvalid) firstInvalid = $input;
+      }
+    });
+    $('#templateFormErrors').removeClass('d-none');
+    if (firstInvalid && firstInvalid.length) {
+      firstInvalid.trigger('focus');
+      firstInvalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      $('#templateFormErrors')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   function refreshTemplateVariableSelect() {
     var $select = $('#templateVariableSelect').empty().append(
       $('<option>').val('').text('Select a variable')
@@ -494,15 +544,19 @@ $(function () {
   $('#instanceTemplate, #instanceSignatory').on('change', scheduleEventPreview);
   $('#instanceFixedFields').on('input change', ':input', scheduleEventPreview);
   $('#adminTemplateFields, #recipientTemplateFields').on('input change', 'input', function () {
+    clearTemplateFormErrors();
     refreshTemplateVariableSelect();
   });
 
   $('#certificateTemplateForm').on('submit', function (event) {
     event.preventDefault();
     var form = this;
+    clearTemplateFormErrors();
     if (!form.checkValidity()) {
       $(form).addClass('was-validated');
-      $(form).find(':invalid').first().trigger('focus');
+      var $invalid = $(form).find(':invalid').first();
+      $invalid.trigger('focus');
+      $invalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     var $button = $('#saveCertificateTemplateBtn').prop('disabled', true);
@@ -525,7 +579,12 @@ $(function () {
       })
       .fail(function (jqXHR, textStatus) {
         var body = jqXHR.responseJSON || {};
-        if (body.details && body.details.fields) Cert.applyFieldErrors($(form), body.details.fields);
+        if (body.details && body.details.fields) showTemplateFormErrors(body.details.fields);
+        else {
+          $('#templateFormErrors').removeClass('d-none');
+          $('#templateFormErrorList').empty().append($('<li>').text(Cert.errorMessage(jqXHR, textStatus)));
+          $('#templateFormErrors')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
       })
       .always(function () { $button.prop('disabled', false); });

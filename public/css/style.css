@@ -164,6 +164,12 @@ body {
   overflow-wrap: anywhere;
 }
 .form-heading { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 1.6rem; }
+.template-field-row.server-invalid {
+  border: 1px solid var(--bs-danger);
+  border-radius: .375rem;
+  padding: .5rem;
+}
+.template-field-error { color: var(--bs-danger); font-size: .875em; }
 
 /* ---------- Admin ---------- */
 .login-card { max-width: 540px; }
