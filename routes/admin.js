@@ -14,6 +14,7 @@ const purposeTemplateService = require('../services/purposeTemplateService');
 const certificateTemplateService = require('../services/certificateTemplateService');
 const pdfService = require('../services/pdfService');
 const signatureStorageService = require('../services/signatureStorageService');
+const footerLogoStorageService = require('../services/footerLogoStorageService');
 const { AppError } = require('../utils/errors');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAdmin, requireOwner } = require('../middleware/auth');
@@ -37,6 +38,10 @@ const purposeLink = (req, purposeId) => `${baseUrl(req)}/p/${purposeId}`;
 const withLink = (req, event) => ({ ...event, link: eventLink(req, event.eventId) });
 const purposeWithLink = (req, template) => ({ ...template, link: purposeLink(req, template.purposeId) });
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
+const footerLogoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: footerLogoStorageService.MAX_LOGOS },
+});
 
 function parseSignatureUpload(req, res, next) {
   upload.single('eSignature')(req, res, (err) => {
@@ -57,6 +62,18 @@ function validateSignatureImage(file) {
     return buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
   }
   return false;
+}
+
+function parseFooterLogoUpload(req, res, next) {
+  footerLogoUpload.array('logos', footerLogoStorageService.MAX_LOGOS)(req, res, (err) => {
+    if (!err) return next();
+    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    return next(new AppError(status, status === 413 ? 'Each footer logo must be 2 MB or smaller.' : 'Invalid footer logo upload.'));
+  });
+}
+
+function validateFooterLogoImage(file) {
+  return validateSignatureImage(file);
 }
 
 function signatoryInput(body) {
@@ -346,6 +363,50 @@ router.patch(
   asyncHandler(async (req, res) => {
     const signatory = await signatoryService.setStatus(req.params.signatoryId, req.body && req.body.status);
     res.json({ success: true, data: signatory });
+  })
+);
+
+/* ---------------------------- Footer logos ---------------------------- */
+
+router.get(
+  '/footer-logos',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const logos = await footerLogoStorageService.listFooterLogos();
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: logos });
+  })
+);
+
+router.post(
+  '/footer-logos',
+  requireAdmin,
+  parseFooterLogoUpload,
+  asyncHandler(async (req, res) => {
+    const files = req.files || [];
+    if (!files.length || files.some((file) => !validateFooterLogoImage(file))) {
+      throw new AppError(400, 'Upload one or more valid PNG, JPEG, or WebP logo images.');
+    }
+    const logos = await footerLogoStorageService.addFooterLogos(files);
+    res.status(201).json({ success: true, data: logos });
+  })
+);
+
+router.patch(
+  '/footer-logos/order',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const logos = await footerLogoStorageService.reorderFooterLogos(req.body && req.body.ids);
+    res.json({ success: true, data: logos });
+  })
+);
+
+router.delete(
+  '/footer-logos/:logoId',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const logos = await footerLogoStorageService.removeFooterLogo(req.params.logoId);
+    res.json({ success: true, data: logos });
   })
 );
 

@@ -5,6 +5,7 @@ $(function () {
   var qrModal = new bootstrap.Modal('#qrModal');
   var events = []; // last list loaded from the server
   var signatories = [];
+  var footerLogos = [];
   var purposeTemplates = [];
   var certificateTemplates = [];
   var certificates = [];
@@ -53,6 +54,7 @@ $(function () {
     if (panelId === 'createEventPanel') scheduleEventPreview();
     if (panelId === 'certificatesPanel') loadCertificates();
     if (panelId === 'accountsPanel' && accountOwner) loadAccounts();
+    if (panelId === 'footerLogosPanel') loadFooterLogos();
   });
 
   // Any 401 from the API means the session expired
@@ -778,6 +780,132 @@ $(function () {
         $button.prop('disabled', false);
         Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
       });
+  });
+
+  /* ------------------------------ Footer logos ------------------------------ */
+
+  function loadFooterLogos() {
+    $('#footerLogoLoading').removeClass('d-none');
+    $.getJSON('/api/admin/footer-logos')
+      .done(function (res) {
+        footerLogos = res.data || [];
+        renderFooterLogos();
+      })
+      .fail(function (jqXHR, textStatus) {
+        $('#footerLogoLoading').addClass('d-none');
+        if (jqXHR.status !== 401) Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
+      });
+  }
+
+  function renderFooterLogos() {
+    var $cards = $('#footerLogoCards').empty();
+    $('#footerLogoLoading').addClass('d-none');
+    $('#footerLogoEmpty').toggleClass('d-none', footerLogos.length > 0);
+    footerLogos.forEach(function (logo, index) {
+      var $card = $('<div class="col-sm-6 col-lg-4">');
+      var $content = $('<div class="border rounded p-3 h-100 d-flex flex-column align-items-center gap-2">');
+      var $image = $('<img>').attr({ src: logo.url, alt: logo.name })
+        .css({ width: '100%', height: '90px', objectFit: 'contain' });
+      var $actions = $('<div class="d-flex flex-wrap justify-content-center gap-2">').append(
+        $('<button type="button" class="btn btn-outline-primary btn-sm js-move-footer-logo">')
+          .attr({ 'data-id': logo.id, 'data-direction': '-1', 'aria-label': 'Move ' + logo.name + ' left' })
+          .text('Move left')
+          .prop('disabled', index === 0),
+        $('<button type="button" class="btn btn-outline-primary btn-sm js-move-footer-logo">')
+          .attr({ 'data-id': logo.id, 'data-direction': '1', 'aria-label': 'Move ' + logo.name + ' right' })
+          .text('Move right')
+          .prop('disabled', index === footerLogos.length - 1),
+        $('<button type="button" class="btn btn-outline-danger btn-sm js-remove-footer-logo">')
+          .attr({ 'data-id': logo.id, 'aria-label': 'Remove ' + logo.name })
+          .text('Remove')
+      );
+      $content.append(
+        $image,
+        $('<div class="small text-muted text-center">').text((index + 1) + '. ' + logo.name),
+        $actions
+      );
+      $cards.append($card.append($content));
+    });
+  }
+
+  $('#footerLogoForm').on('submit', function (event) {
+    event.preventDefault();
+    var files = Array.prototype.slice.call($('#footerLogoFiles')[0].files || []);
+    if (!files.length) {
+      Cert.showToast('Choose at least one logo image to upload.', 'warning');
+      return;
+    }
+    if (files.some(function (file) { return file.size > 2 * 1024 * 1024; })) {
+      Cert.showToast('Each footer logo must be 2 MB or smaller.', 'warning');
+      return;
+    }
+
+    var data = new FormData();
+    files.forEach(function (file) { data.append('logos', file); });
+    $('#uploadFooterLogosBtn').prop('disabled', true);
+    $.ajax({
+      url: '/api/admin/footer-logos',
+      method: 'POST',
+      data: data,
+      processData: false,
+      contentType: false
+    })
+      .done(function (res) {
+        footerLogos = res.data || [];
+        $('#footerLogoFiles').val('');
+        renderFooterLogos();
+        Cert.showToast('Footer logos uploaded. Their order is shown left to right.', 'success');
+      })
+      .fail(function (jqXHR, textStatus) {
+        Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
+      })
+      .always(function () { $('#uploadFooterLogosBtn').prop('disabled', false); });
+  });
+
+  $('#footerLogoCards').on('click', '.js-move-footer-logo', function () {
+    var $button = $(this).prop('disabled', true);
+    var index = footerLogos.findIndex(function (logo) { return logo.id === $button.data('id'); });
+    var nextIndex = index + Number($button.data('direction'));
+    if (index < 0 || nextIndex < 0 || nextIndex >= footerLogos.length) {
+      renderFooterLogos();
+      return;
+    }
+    var reordered = footerLogos.slice();
+    var moved = reordered[index];
+    reordered[index] = reordered[nextIndex];
+    reordered[nextIndex] = moved;
+    $.ajax({
+      url: '/api/admin/footer-logos/order',
+      method: 'PATCH',
+      contentType: 'application/json',
+      data: JSON.stringify({ ids: reordered.map(function (logo) { return logo.id; }) })
+    })
+      .done(function (res) {
+        footerLogos = res.data || [];
+        renderFooterLogos();
+      })
+      .fail(function (jqXHR, textStatus) {
+        Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
+        loadFooterLogos();
+      });
+  });
+
+  $('#footerLogoCards').on('click', '.js-remove-footer-logo', function () {
+    var id = $(this).data('id');
+    var logo = footerLogos.find(function (item) { return item.id === id; });
+    if (!logo || !window.confirm('Remove "' + logo.name + '" from all new and regenerated certificates?')) return;
+    var $button = $(this).prop('disabled', true);
+    $.ajax({ url: '/api/admin/footer-logos/' + encodeURIComponent(id), method: 'DELETE' })
+      .done(function (res) {
+        footerLogos = res.data || [];
+        renderFooterLogos();
+        Cert.showToast('Footer logo removed.', 'success');
+      })
+      .fail(function (jqXHR, textStatus) {
+        Cert.showToast(Cert.errorMessage(jqXHR, textStatus), 'danger');
+        loadFooterLogos();
+      })
+      .always(function () { $button.prop('disabled', false); });
   });
 
   /* ---------------------------- Purpose templates ---------------------------- */

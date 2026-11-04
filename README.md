@@ -9,10 +9,12 @@ Node.js + Express certificate issuance with Google Sheets storage, EJS/Puppeteer
 | `/` | Verify a certificate and download its PDF |
 | `/e/<EVENT_ID>` | Event QR landing page; attendee enters the fields configured for that event |
 | `/p/<PURPOSE_ID>` | Purpose-template QR landing page; attendee enters full name and organization |
-| `/admin` | Template Maker, Create Event, Events, Signatories, issued Certificates, and owner-managed Accounts |
+| `/admin` | Template Maker, Create Event, Events, Signatories, Footer Logos, issued Certificates, and owner-managed Accounts |
 | `/request` | Legacy informational page; new purpose certificates require an admin-created template link |
 
 Admin creates an `EVENT` with event name/date/place and an active signatory, or creates a purpose template with place/date/purpose and an active signatory. Both create shareable URLs and QR images. Signature image files are stored in `public/uploads/signatures/`; Google Sheets stores their app-relative path, such as `/uploads/signatures/signature-<random-id>.png`.
+
+The Footer Logos tab uploads up to 8 PNG, JPEG, or WebP images (2 MB each), lets admins reorder them, and prints them in that left-to-right order along the bottom of every certificate. Logo images are stored in `public/uploads/footer-logos/` and their ordering is stored in `data/footer-logos.json`.
 
 Certificate Templates let an admin save a reusable certificate title, message, organizer-managed fields, and attendee-managed fields. Message variables use `_VARIABLE_KEY_` tokens; issue-date and signatory variables are supplied automatically. The Sample Certificate tab previews the current template with a selected signatory. Creating an event instance snapshots the template and its organizer values, assigns an active signatory, and creates a separate QR link. Attendee fields are collected on that QR page. The QR printed on each issued certificate opens the verifier with its reference number and recipient name prefilled; manual verification requires both values.
 
@@ -36,6 +38,7 @@ services/
   pdfService.js             EJS -> Puppeteer PDF generation
   purposeTemplateService.js PurposeTemplates tab
   signatureStorageService.js Local signature file upload/read
+  footerLogoStorageService.js Local certificate footer logo upload/order/read
   signatoryService.js       Signatories tab
   qrService.js
 utils/
@@ -136,9 +139,9 @@ The old open-ended `POST /api/certificate/request` now returns HTTP 410. This pr
 4. Do not configure `SIGNATORY_NAME`, `SIGNATORY_TITLE`, or `SIGNATORY_OFFICE`; signatories are managed in `/admin`.
 5. Run `npm install`, populate `.env` from `.env.example`, then `npm run dev`. For production, deploy the repository to Vercel and set the same environment variables in Project Settings.
 
-Signature files are written to `public/uploads/signatures/` and are served as static files. Back up this directory along with the spreadsheet: the Sheet stores only each relative path, not the image itself. The file upload limit is 2 MB; supported formats are PNG, JPEG, and WebP.
+Signature files are written to `public/uploads/signatures/` and are served as static files. Footer logo files are written to `public/uploads/footer-logos/`, with their ordered manifest in `data/footer-logos.json`. Back up these files and folders along with the spreadsheet. The file upload limit is 2 MB; supported formats are PNG, JPEG, and WebP.
 
-**Vercel limitation:** Vercel deployments do not provide durable writable storage for runtime uploads. This local-folder storage works on a persistent Node.js host or during local development, but uploads on Vercel may fail because the deployment filesystem is read-only. Files also cannot persist across deployments or be shared reliably between serverless instances. Use a persistent writable host or external durable file storage if signatures must be uploaded and available in production on Vercel.
+**Vercel limitation:** Vercel deployments do not provide durable writable storage for runtime uploads. This local-folder storage works on a persistent Node.js host or during local development, but uploads on Vercel may fail because the deployment filesystem is read-only. Files also cannot persist across deployments or be shared reliably between serverless instances. Use a persistent writable host or external durable file storage if signatures or footer logos must be uploaded and available in production on Vercel.
 
 ## Implementation plan
 

@@ -201,11 +201,16 @@
       white-space: nowrap;
     }
     .sign-title { margin: 1mm 0 0; font-size: 10.5pt; line-height: 1.15; }
-    .ref-no { margin: 1.2mm 0 0; font-size: 10.5pt; line-height: 1.15; }
-    .qr {
+    .qr-block {
       position: absolute;
       right: 0;
       bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .ref-no { margin: 0 0 1mm; font-size: 10.5pt; line-height: 1.15; white-space: nowrap; }
+    .qr {
       width: 21mm;
       height: 21mm;
       display: block;
@@ -218,6 +223,22 @@
       max-height: 22mm;
       object-fit: contain;
       margin: 3mm auto 0;
+    }
+    .footer-logo-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .footer-logo {
+      display: block;
+      flex: 0 0 27mm;
+      width: 27mm;
+      height: 14mm;
+      object-fit: contain;
     }
   </style>
 </head>
@@ -283,14 +304,23 @@
           <% if (signatureImage) { %><img class="signature-image" src="<%= signatureImage %>" alt="Electronic signature"><% } %>
           <p class="sign-name"><%= signatory.name %></p>
           <p class="sign-title"><%= signatory.title %><% if (signatory.office) { %>, <%= signatory.office %><% } %></p>
-          <p class="ref-no">Reference No.: <%= certificate.certificateNo %></p>
         </div>
-        <img class="qr" src="<%= qrDataUri %>" alt="Verification QR code">
+        <div class="qr-block">
+          <p class="ref-no">Reference No.: <%= certificate.certificateNo %></p>
+          <img class="qr" src="<%= qrDataUri %>" alt="Verification QR code">
+        </div>
       </footer>
 
       <!-- Footer banner image from FOOTER_IMAGE -->
       <% if (footerImage) { %>
         <img class="footer-img" src="<%= footerImage %>" alt="" onerror="this.style.display='none'">
+      <% } %>
+      <% if (footerLogos && footerLogos.length) { %>
+        <div class="footer-logo-strip" aria-label="Certificate partner logos">
+          <% footerLogos.forEach(function (logo) { %>
+            <img class="footer-logo" src="<%= logo.dataUri %>" alt="<%= logo.name %>" onerror="this.style.display='none'">
+          <% }); %>
+        </div>
       <% } %>
 
     </div>

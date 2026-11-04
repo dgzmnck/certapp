@@ -54,6 +54,7 @@
       <li class="nav-item"><button class="nav-link" type="button" data-panel="createEventPanel">Create Event</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="eventsPanel">Events</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="signatoriesPanel">Signatories</button></li>
+      <li class="nav-item"><button class="nav-link" type="button" data-panel="footerLogosPanel">Footer Logos</button></li>
       <li class="nav-item"><button class="nav-link" type="button" data-panel="certificatesPanel">Certificates</button></li>
       <li class="nav-item d-none" id="accountsNavItem"><button class="nav-link" type="button" data-panel="accountsPanel">Accounts</button></li>
     </ul>
@@ -287,6 +288,30 @@ Given this _ISSUE_DAY_ of _ISSUE_MONTH_ _ISSUE_YEAR_ at _ISSUE_PLACE_.</textarea
         </div>
         <p class="p-4 mb-0 text-muted" id="recipLoading">Loading certificates…</p>
         <p class="p-4 mb-0 text-muted d-none" id="recipEmpty">No certificates have been issued yet.</p>
+      </section>
+    </div>
+
+    <div class="admin-panel" id="footerLogosPanel" hidden>
+      <section class="shell form-panel mb-4">
+        <h2 class="h5 mb-2 form-heading">Certificate footer logos</h2>
+        <p class="text-muted">Upload up to 8 logos. They appear in order from left to right at the bottom of every certificate.</p>
+        <form id="footerLogoForm" enctype="multipart/form-data">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-9">
+              <label for="footerLogoFiles" class="form-label">Logo images (PNG, JPEG, or WebP; up to 2 MB each)</label>
+              <input type="file" class="form-control" id="footerLogoFiles" accept="image/png,image/jpeg,image/webp" multiple required>
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-primary w-100" id="uploadFooterLogosBtn">Upload logos</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <section class="shell">
+        <h2 class="h5 form-heading p-3 mb-0">Current footer order</h2>
+        <div class="row g-3 p-3" id="footerLogoCards"></div>
+        <p class="p-4 mb-0 text-muted d-none" id="footerLogoEmpty">No footer logos yet.</p>
+        <p class="p-4 mb-0 text-muted" id="footerLogoLoading">Loading footer logos…</p>
       </section>
     </div>
 

@@ -18,6 +18,7 @@ const config = require('../config');
 const { AppError } = require('../utils/errors');
 const { formatLongDate } = require('../utils/dates');
 const signatureStorage = require('./signatureStorageService');
+const footerLogoStorage = require('./footerLogoStorageService');
 
 const ROOT = path.join(__dirname, '..');
 const TEMPLATE_PATH = path.join(ROOT, 'views', 'certificate.ejs');
@@ -92,6 +93,7 @@ async function renderCertificateHtml(certificate, qrDataUri) {
   const signatureImage = certificate.signatoryESignature
     ? await signatureStorage.signatureDataUri(certificate.signatoryESignature)
     : null;
+  const footerLogos = await footerLogoStorage.footerLogoDataUris();
   return ejs.renderFile(TEMPLATE_PATH, {
     certificate,
     isPurpose: certificate.type === 'PURPOSE' || !certificate.eventName,
@@ -106,6 +108,7 @@ async function renderCertificateHtml(certificate, qrDataUri) {
     logoImage: loadImage(config.branding.logoFile),
     headerImage: loadImage(config.branding.headerImage),
     footerImage: loadImage(config.branding.footerImage),
+    footerLogos,
     bootstrapCss: loadBootstrapCss(),
     eventDateLong: formatLongDate(certificate.eventDate),
     renderedMessage: renderMessage(certificate),

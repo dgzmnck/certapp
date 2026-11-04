@@ -6,3 +6,6 @@ node_modules/
 *.log
 .DS_Store
 public/uploads/signatures/
+public/uploads/footer-logos/
+data/footer-logos.json
+data/footer-logos.json.*.tmp
